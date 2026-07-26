@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Flux.ai — CRM de Automatizaciones e IA</title>
+  <meta name="description" content="CRM de alta velocidad y automatizaciones para Flux.ai. Creado para Pau Martí y Mikel Canals.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body class="bg-dark text-light">
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Header App Bar -->
+  <header class="app-header">
+    <div class="logo-container">
+      <div class="logo-badge">
+        <span class="logo-icon">⚡</span>
+      </div>
+      <div>
+        <h1 class="brand-title">Flux<span class="text-accent">.ai</span></h1>
+        <p class="brand-subtitle">CRM de Automatización & IA</p>
+      </div>
+    </div>
+
+    <!-- Sync status & Google Sheets indicator -->
+    <div class="header-actions">
+      <div id="syncStatus" class="sync-indicator" title="Sincronizado con Google Sheets">
+        <span class="sync-dot"></span>
+        <span id="syncStatusText">Google Sheets Conectado 📊</span>
+      </div>
+      
+      <button id="btnConfigSheets" class="btn btn-secondary btn-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span class="hidden-mobile">Google Sheets</span>
+      </button>
+
+      <button id="btnNewLead" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>Nuevo Lead</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- KPI Metrics Dashboard -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon icon-emerald">💰</div>
+        <div>
+          <span class="kpi-label">Valor Pipeline</span>
+          <h3 id="kpiPipelineValue" class="kpi-value">$0 MXN</h3>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-purple">🎯</div>
+        <div>
+          <span class="kpi-label">Leads Activos</span>
+          <h3 id="kpiActiveLeads" class="kpi-value">0</h3>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-blue">🏆</div>
+        <div>
+          <span class="kpi-label">Ventas Ganadas</span>
+          <h3 id="kpiWonLeads" class="kpi-value">0</h3>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-amber">✨</div>
+        <div>
+          <span class="kpi-label">Ticket Promedio</span>
+          <h3 id="kpiAvgTicket" class="kpi-value">$0 MXN</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar Filters -->
+    <section class="toolbar-card">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="searchInput" placeholder="Buscar por empresa, contacto o notas...">
+      </div>
+
+      <div class="filter-group">
+        <!-- Founder Filter -->
+        <div class="founder-filter-buttons" id="founderFilter">
+          <button class="founder-btn active" data-founder="ALL">Todos</button>
+          <button class="founder-btn" data-founder="Pau Martí">Pau</button>
+          <button class="founder-btn" data-founder="Mikel Canals">Mikel</button>
+        </div>
+
+        <!-- Service Filter -->
+        <select id="serviceFilter" class="select-input">
+          <option value="ALL">Todos los Servicios</option>
+          <option value="Automatización Make/n8n">Automatizaciones (Make/n8n)</option>
+          <option value="Desarrollo App IA">Desarrollo App con IA</option>
+          <option value="Chatbot Inteligente">Chatbots Inteligentes</option>
+          <option value="Auditoría / Consultoría IA">Auditoría & Consultoría</option>
+        </select>
+
+        <!-- CSV Export Button -->
+        <button id="btnExportCSV" class="btn btn-secondary btn-sm" title="Exportar leads a Excel / CSV">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span class="hidden-mobile">CSV</span>
+        </button>
+
+        <!-- View Switcher -->
+        <div class="view-switch">
+          <button id="viewKanbanBtn" class="switch-btn active" title="Vista Kanban">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="15" width="7" height="6" rx="1"></rect></svg>
+          </button>
+          <button id="viewTableBtn" class="switch-btn" title="Vista Lista / Tabla">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mobile Stage Selection Tabs -->
+    <div class="mobile-stage-tabs" id="mobileStageTabs">
+      <button class="stage-tab-btn active" data-stage="ALL">Todas las Etapas</button>
+      <button class="stage-tab-btn" data-stage="Nuevo Lead">Nuevo Lead</button>
+      <button class="stage-tab-btn" data-stage="Contactado">Contactado</button>
+      <button class="stage-tab-btn" data-stage="Reunión / Demo">Reunión / Demo</button>
+      <button class="stage-tab-btn" data-stage="Propuesta Enviada">Propuesta</button>
+      <button class="stage-tab-btn" data-stage="Ganado">Ganado 🚀</button>
+      <button class="stage-tab-btn" data-stage="Perdido">Perdido</button>
+    </div>
+
+    <!-- Kanban View Container -->
+    <section id="kanbanView" class="kanban-board">
+      <div class="kanban-column" data-stage="Nuevo Lead">
+        <div class="column-header column-blue">
+          <div class="column-title"><span class="status-dot"></span><h3>Nuevo Lead</h3></div>
+          <span class="column-count" id="count-Nuevo Lead">0</span>
+        </div>
+        <div class="column-cards" id="cards-Nuevo Lead"></div>
+      </div>
+
+      <div class="kanban-column" data-stage="Contactado">
+        <div class="column-header column-purple">
+          <div class="column-title"><span class="status-dot"></span><h3>Contactado</h3></div>
+          <span class="column-count" id="count-Contactado">0</span>
+        </div>
+        <div class="column-cards" id="cards-Contactado"></div>
+      </div>
+
+      <div class="kanban-column" data-stage="Reunión / Demo">
+        <div class="column-header column-amber">
+          <div class="column-title"><span class="status-dot"></span><h3>Reunión / Demo</h3></div>
+          <span class="column-count" id="count-Reunión / Demo">0</span>
+        </div>
+        <div class="column-cards" id="cards-Reunión / Demo"></div>
+      </div>
+
+      <div class="kanban-column" data-stage="Propuesta Enviada">
+        <div class="column-header column-cyan">
+          <div class="column-title"><span class="status-dot"></span><h3>Propuesta Enviada</h3></div>
+          <span class="column-count" id="count-Propuesta Enviada">0</span>
+        </div>
+        <div class="column-cards" id="cards-Propuesta Enviada"></div>
+      </div>
+
+      <div class="kanban-column" data-stage="Ganado">
+        <div class="column-header column-emerald">
+          <div class="column-title"><span class="status-dot"></span><h3>Ganado 🚀</h3></div>
+          <span class="column-count" id="count-Ganado">0</span>
+        </div>
+        <div class="column-cards" id="cards-Ganado"></div>
+      </div>
+
+      <div class="kanban-column" data-stage="Perdido">
+        <div class="column-header column-rose">
+          <div class="column-title"><span class="status-dot"></span><h3>Perdido</h3></div>
+          <span class="column-count" id="count-Perdido">0</span>
+        </div>
+        <div class="column-cards" id="cards-Perdido"></div>
+      </div>
+    </section>
+
+    <!-- Table View Container -->
+    <section id="tableView" class="table-container hidden">
+      <table class="leads-table">
+        <thead>
+          <tr>
+            <th>Empresa / Cliente</th>
+            <th>Contacto</th>
+            <th>Socio Asignado</th>
+            <th>Servicio IA</th>
+            <th>Estado</th>
+            <th>Valor ($ MXN)</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Mobile Floating Action Button (FAB) -->
+  <button id="fabNewLead" class="fab-add-mobile" title="Añadir Nuevo Lead">+</button>
+
+  <!-- Modal: Crear / Editar Lead -->
+  <div id="leadModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nuevo Prospecto para Flux.ai</h2>
+        <button id="closeLeadModal" class="close-btn">&times;</button>
+      </div>
+      
+      <form id="leadForm" class="modal-form">
+        <input type="hidden" id="leadId">
+        
+        <div class="form-grid">
+          <div class="form-group col-span-2">
+            <label for="companyName">Empresa / Negocio *</label>
+            <input type="text" id="companyName" required placeholder="Ej. Restaurantes Grupo Maya">
+          </div>
+
+          <div class="form-group">
+            <label for="contactName">Persona de Contacto *</label>
+            <input type="text" id="contactName" required placeholder="Ej. Roberto Sánchez">
+          </div>
+
+          <div class="form-group">
+            <label for="contactPhone">WhatsApp / Teléfono</label>
+            <input type="tel" id="contactPhone" placeholder="Ej. 5215512345678">
+          </div>
+
+          <div class="form-group">
+            <label for="contactEmail">Correo Electrónico</label>
+            <input type="email" id="contactEmail" placeholder="ejemplo@empresa.com">
+          </div>
+
+          <div class="form-group">
+            <label for="assignedFounder">Socio Encargado *</label>
+            <select id="assignedFounder" required>
+              <option value="Pau Martí">Pau Martí</option>
+              <option value="Mikel Canals">Mikel Canals</option>
+              <option value="Ambos (Pau & Mikel)">Ambos (Pau & Mikel)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="serviceType">Servicio de IA / Automatización</label>
+            <select id="serviceType">
+              <option value="Automatización Make/n8n">Automatización Make / n8n</option>
+              <option value="Desarrollo App IA">Desarrollo de App con IA</option>
+              <option value="Chatbot Inteligente">Chatbot IA (WhatsApp/Web)</option>
+              <option value="Auditoría / Consultoría IA">Auditoría / Consultoría IA</option>
+              <option value="Otro">Otro Proyecto a Medida</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dealStage">Etapa del Pipeline</label>
+            <select id="dealStage">
+              <option value="Nuevo Lead">Nuevo Lead</option>
+              <option value="Contactado">Contactado</option>
+              <option value="Reunión / Demo">Reunión / Demo</option>
+              <option value="Propuesta Enviada">Propuesta Enviada</option>
+              <option value="Ganado">Ganado 🚀</option>
+              <option value="Perdido">Perdido</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dealValue">Valor Estimado ($ MXN)</label>
+            <input type="number" id="dealValue" min="0" step="1000" placeholder="Ej. 35000">
+          </div>
+
+          <div class="form-group">
+            <label for="nextActionDate">Fecha de Próximo Seguimiento</label>
+            <input type="date" id="nextActionDate">
+          </div>
+
+          <div class="form-group col-span-2">
+            <label for="leadNotes">Notas y Contexto del Negocio</label>
+            <textarea id="leadNotes" rows="3" placeholder="Detalles de lo que necesita automatizar el cliente..."></textarea>
+          </div>
+        </div>
+
+        <!-- Generador de Propuesta IA (Flux.ai Assistant) -->
+        <div class="ai-assistant-box">
+          <div class="ai-header">
+            <span class="ai-sparkle">✨ Flux.ai Assistant</span>
+            <button type="button" id="btnGenerateAiIdea" class="btn btn-sm btn-outline-purple">
+              Generar Idea de Automatización
+            </button>
+          </div>
+          <div id="aiSuggestion" class="ai-suggestion-text hidden">
+            Haz clic en el botón para generar sugerencias automáticas de propuesta para este cliente.
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btnDeleteLead" class="btn btn-danger hidden">Eliminar</button>
+          <div class="actions-right">
+            <button type="button" id="cancelLeadModal" class="btn btn-secondary">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Lead</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Configuración de Google Sheets -->
+  <div id="sheetsConfigModal" class="modal-overlay hidden">
+    <div class="modal-content modal-md">
+      <div class="modal-header">
+        <h2>📊 Conectar Google Sheets</h2>
+        <button id="closeSheetsModal" class="close-btn">&times;</button>
+      </div>
+
+      <div class="firebase-instructions">
+        <p>Tu CRM ya está conectado a tu Google Sheet. Si deseas cambiar de hoja en el futuro, pega aquí tu nuevo enlace de Google Apps Script.</p>
+      </div>
+
+      <form id="sheetsConfigForm">
+        <div class="form-group">
+          <label for="sheetsScriptUrl">URL de la App Web de Google Apps Script *</label>
+          <input type="url" id="sheetsScriptUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" required>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btnResetSheets" class="btn btn-outline-danger">Usar Modo Demo Local</button>
+          <button type="submit" class="btn btn-primary">Guardar Enlace</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
