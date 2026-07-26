@@ -192,12 +192,15 @@ function setupEventListeners() {
     });
   }
 
+  // Mobile stage tabs fix: use closest('.stage-tab-btn')
   const stageTabs = document.querySelectorAll('#mobileStageTabs .stage-tab-btn');
   stageTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
+      const btn = e.target.closest('.stage-tab-btn');
+      if (!btn) return;
       stageTabs.forEach(t => t.classList.remove('active'));
-      e.target.classList.add('active');
-      activeMobileStage = e.target.getAttribute('data-stage');
+      btn.classList.add('active');
+      activeMobileStage = btn.getAttribute('data-stage') || 'ALL';
       renderApp(DB.getLeads());
     });
   });
@@ -216,12 +219,15 @@ function setupEventListeners() {
   document.getElementById('viewKanbanBtn').addEventListener('click', () => setView('kanban'));
   document.getElementById('viewTableBtn').addEventListener('click', () => setView('table'));
 
+  // FOUNDER FILTER FIX: Use closest('.segment-btn') to catch clicks on inner counts
   const founderBtns = document.querySelectorAll('#founderFilter .segment-btn');
   founderBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const targetBtn = e.target.closest('.segment-btn');
+      if (!targetBtn) return;
       founderBtns.forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      activeFounderFilter = e.target.getAttribute('data-founder');
+      targetBtn.classList.add('active');
+      activeFounderFilter = targetBtn.getAttribute('data-founder') || 'ALL';
       renderApp(DB.getLeads());
     });
   });
@@ -278,8 +284,9 @@ function updateFounderBadges(allLeads) {
   let countMikel = 0;
 
   allLeads.forEach(l => {
-    if (l.assignedFounder === 'Pau Martí' || l.assignedFounder.includes('Ambos')) countPau++;
-    if (l.assignedFounder === 'Miquel Canals' || l.assignedFounder.includes('Ambos')) countMikel++;
+    const founder = l.assignedFounder || '';
+    if (founder === 'Pau Martí' || founder.includes('Ambos')) countPau++;
+    if (founder === 'Miquel Canals' || founder.includes('Mikel') || founder.includes('Ambos')) countMikel++;
   });
 
   const cAll = document.getElementById('countAllFounder');
@@ -309,19 +316,26 @@ function filterLeads(leads) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   return leads.filter(lead => {
-    if (activeFounderFilter !== 'ALL') {
-      if (lead.assignedFounder !== activeFounderFilter && !lead.assignedFounder.includes('Ambos')) {
-        return false;
+    // Robust Founder Filtering logic
+    if (activeFounderFilter && activeFounderFilter !== 'ALL') {
+      const assigned = lead.assignedFounder || '';
+      if (activeFounderFilter === 'Pau Martí') {
+        if (assigned !== 'Pau Martí' && !assigned.includes('Ambos')) return false;
+      } else if (activeFounderFilter === 'Miquel Canals') {
+        if (assigned !== 'Miquel Canals' && !assigned.includes('Mikel') && !assigned.includes('Ambos')) return false;
       }
     }
-    if (activeServiceFilter !== 'ALL') {
+    // Service filter
+    if (activeServiceFilter && activeServiceFilter !== 'ALL') {
       if (lead.serviceType !== activeServiceFilter) return false;
     }
+    // Follow-up filter
     if (showOnlyFollowUps) {
       if (!lead.nextActionDate || lead.nextActionDate > todayStr || lead.dealStage === 'Ganado' || lead.dealStage === 'Perdido') {
         return false;
       }
     }
+    // Search query filter
     if (currentSearchQuery) {
       const matchCompany = (lead.companyName || '').toLowerCase().includes(currentSearchQuery);
       const matchContact = (lead.contactName || '').toLowerCase().includes(currentSearchQuery);
@@ -428,13 +442,11 @@ function createKanbanCardEl(lead) {
     }
   }
 
-  // High Value Badge
   let highValueBadge = '';
   if (lead.dealValue >= 50000) {
     highValueBadge = `<span class="tag tag-high-value">🔥 $50k+</span>`;
   }
 
-  // Company Initials Monogram Avatar
   const monogram = getCompanyInitials(lead.companyName);
   const avatarBg = getCompanyColor(lead.companyName);
 
