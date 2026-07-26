@@ -32,7 +32,7 @@ export const FOUNDERS = ['Pau Martí', 'Miquel Canals', 'Ambos (Pau & Miquel)'];
 // Default Seed Leads if database is empty
 const INITIAL_DEMO_LEADS = [
   {
-    id: 'flux-lead-101',
+    id: 'FLX-101',
     companyName: 'Grupo Hotelero Cancún',
     contactName: 'Carlos Mendoza',
     contactPhone: '5512345678',
@@ -48,7 +48,7 @@ const INITIAL_DEMO_LEADS = [
     syncState: 'synced'
   },
   {
-    id: 'flux-lead-102',
+    id: 'FLX-102',
     companyName: 'Agencia Logística Monterrey',
     contactName: 'Sofía Garza',
     contactPhone: '8181239876',
@@ -78,7 +78,6 @@ class DatabaseEngine {
   }
 
   init() {
-    // Load Endpoint
     const savedEndpoint = localStorage.getItem(STORAGE_KEYS.ENDPOINT);
     if (savedEndpoint && savedEndpoint.startsWith('https://script.google.com/')) {
       this.endpointUrl = savedEndpoint;
@@ -86,21 +85,17 @@ class DatabaseEngine {
       this.endpointUrl = DEFAULT_ENDPOINT;
     }
 
-    // Load Local Memory Cache
     this.leads = this.loadFromStorage(STORAGE_KEYS.LEADS, INITIAL_DEMO_LEADS);
     this.syncQueue = this.loadFromStorage(STORAGE_KEYS.QUEUE, []);
 
-    // Listen to network status changes
     window.addEventListener('online', () => this.processSyncQueue());
 
-    // Auto sync queue poll loop every 12 seconds
     setInterval(() => {
       if (navigator.onLine && this.syncQueue.length > 0) {
         this.processSyncQueue();
       }
     }, 12000);
 
-    // Initial background pull
     if (navigator.onLine && this.endpointUrl) {
       this.pullFromRemote();
     }
@@ -145,22 +140,21 @@ class DatabaseEngine {
     this.pullFromRemote();
   }
 
-  // --- MUTATION METHODS (OPTIMISTIC UI + TRANSACTION QUEUE) ---
+  // --- MUTATION METHODS ---
   async addLead(leadData) {
+    const nextSeq = 100 + this.leads.length + 1;
     const sanitized = this.sanitizeLeadSchema({
-      id: 'lead-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      id: 'FLX-' + nextSeq,
       ...leadData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       syncState: 'pending'
     });
 
-    // 1. Optimistic Local Insert
     this.leads.unshift(sanitized);
     this.saveToStorage(STORAGE_KEYS.LEADS, this.leads);
     this.notify();
 
-    // 2. Queue Sync Operation
     this.enqueueOperation({ type: 'ADD', payload: sanitized });
     this.processSyncQueue();
     return sanitized;
@@ -178,12 +172,10 @@ class DatabaseEngine {
       syncState: 'pending'
     });
 
-    // 1. Optimistic Local Update
     this.leads[index] = updated;
     this.saveToStorage(STORAGE_KEYS.LEADS, this.leads);
     this.notify();
 
-    // 2. Queue Sync Operation
     this.enqueueOperation({ type: 'UPDATE', payload: updated });
     this.processSyncQueue();
     return updated;
@@ -195,12 +187,10 @@ class DatabaseEngine {
 
     const targetLead = this.leads[index];
 
-    // 1. Optimistic Local Delete
     this.leads.splice(index, 1);
     this.saveToStorage(STORAGE_KEYS.LEADS, this.leads);
     this.notify();
 
-    // 2. Queue Sync Operation
     this.enqueueOperation({ type: 'DELETE', payload: { id: targetLead.id } });
     this.processSyncQueue();
     return true;
@@ -223,7 +213,6 @@ class DatabaseEngine {
     }
   }
 
-  // --- REMOTE SYNC & QUEUE PROCESSOR ---
   enqueueOperation(op) {
     this.syncQueue.push({
       id: 'op-' + Date.now(),
@@ -325,7 +314,6 @@ class DatabaseEngine {
     }
   }
 
-  // --- SCHEMA SANITIZATION & INTEGRITY ---
   sanitizeLeadSchema(data) {
     let founder = String(data.assignedFounder || '').trim();
     if (founder === 'Mikel Canals' || founder === 'Mikel') founder = 'Miquel Canals';
@@ -333,8 +321,13 @@ class DatabaseEngine {
     if (founder.includes('Ambos')) founder = 'Ambos (Pau & Miquel)';
     if (!FOUNDERS.includes(founder)) founder = 'Pau Martí';
 
+    let id = String(data.id || '').trim();
+    if (!id || id.startsWith('lead-')) {
+      id = 'FLX-' + (100 + Math.floor(Math.random() * 899));
+    }
+
     return {
-      id: String(data.id || 'lead-' + Date.now()),
+      id,
       companyName: String(data.companyName || 'Empresa Sin Nombre').trim(),
       contactName: String(data.contactName || '').trim(),
       contactPhone: this.formatPhone(data.contactPhone || ''),
@@ -358,33 +351,6 @@ class DatabaseEngine {
     if (cleaned.length === 10) return '52' + cleaned;
     if (cleaned.length === 11 && cleaned.startsWith('521')) return '52' + cleaned.substring(3);
     return cleaned;
-  }
-
-  // --- IMPORT / EXPORT DATA ENGINE ---
-  exportBackupJSON() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.leads, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `FluxAI_CRM_Backup_${new Date().toISOString().slice(0,10)}.json`);
-    document.body.appendChild(dlAnchorElem);
-    dlAnchorElem.click();
-    dlAnchorElem.remove();
-  }
-
-  importBackupJSON(jsonString) {
-    try {
-      const parsed = JSON.parse(jsonString);
-      if (Array.isArray(parsed)) {
-        const sanitizedList = parsed.map(p => this.sanitizeLeadSchema(p));
-        this.leads = sanitizedList;
-        this.saveToStorage(STORAGE_KEYS.LEADS, this.leads);
-        this.notify();
-        return { success: true, count: sanitizedList.length };
-      }
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
-    return { success: false, error: 'Formato de JSON no válido' };
   }
 
   exportCSV() {

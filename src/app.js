@@ -10,20 +10,16 @@ let currentSearchQuery = '';
 export function initApp() {
   setupEventListeners();
 
-  // Subscribe to DB changes
   DB.subscribe((leads) => {
     renderApp(leads);
   });
 
-  // Subscribe to Sync Status
   DB.subscribeSyncStatus((status) => {
     updateSyncStatusUI(status);
   });
 
-  // Initial Render
   renderApp(DB.getLeads());
 
-  // Populate config fields
   const inputSheets = document.getElementById('sheetsScriptUrl');
   if (inputSheets) inputSheets.value = DB.getEndpointUrl();
 
@@ -34,7 +30,6 @@ function updateAiKeyBadge() {
   const key = getSavedAiApiKey();
   const model = getSavedAiModel();
   const badge = document.getElementById('aiKeyStatusBadge');
-  const btnRemove = document.getElementById('btnRemoveAiKey');
 
   if (badge) {
     if (key && key.startsWith('sk-')) {
@@ -42,11 +37,6 @@ function updateAiKeyBadge() {
     } else {
       badge.textContent = `🔑 Pegar Clave API OpenAI`;
     }
-  }
-
-  if (btnRemove) {
-    if (key) btnRemove.classList.remove('hidden');
-    else btnRemove.classList.add('hidden');
   }
 }
 
@@ -80,11 +70,9 @@ function updateSyncStatusUI(status) {
 }
 
 function setupEventListeners() {
-  // Mobile FAB
   const fab = document.getElementById('fabNewLead');
   if (fab) fab.addEventListener('click', () => openLeadModal());
 
-  // SMART AI LEAD INGESTION FORM
   const aiIngestForm = document.getElementById('aiIngestForm');
   if (aiIngestForm) {
     aiIngestForm.addEventListener('submit', async (e) => {
@@ -118,7 +106,6 @@ function setupEventListeners() {
     });
   }
 
-  // AI Key Modal
   const btnConfigAiKey = document.getElementById('btnConfigAiKey');
   if (btnConfigAiKey) {
     btnConfigAiKey.addEventListener('click', () => {
@@ -138,17 +125,6 @@ function setupEventListeners() {
     });
   }
 
-  const btnRemoveAiKey = document.getElementById('btnRemoveAiKey');
-  if (btnRemoveAiKey) {
-    btnRemoveAiKey.addEventListener('click', () => {
-      saveAiApiKey('');
-      updateAiKeyBadge();
-      document.getElementById('aiApiKeyInput').value = '';
-      document.getElementById('aiKeyModal').classList.add('hidden');
-      showToast('Clave API eliminada');
-    });
-  }
-
   const aiKeyForm = document.getElementById('aiKeyForm');
   if (aiKeyForm) {
     aiKeyForm.addEventListener('submit', (e) => {
@@ -162,7 +138,6 @@ function setupEventListeners() {
     });
   }
 
-  // Value Preset Chips ($15k, $30k, $50k, $100k)
   const presetChips = document.querySelectorAll('.preset-chip');
   presetChips.forEach(chip => {
     chip.addEventListener('click', () => {
@@ -172,19 +147,6 @@ function setupEventListeners() {
     });
   });
 
-  // Copy AI Pitch
-  const btnCopyAi = document.getElementById('btnCopyAiIdea');
-  if (btnCopyAi) {
-    btnCopyAi.addEventListener('click', () => {
-      const aiBox = document.getElementById('aiSuggestion');
-      if (aiBox) {
-        navigator.clipboard.writeText(aiBox.innerText);
-        showToast('Propuesta copiada al portapapeles');
-      }
-    });
-  }
-
-  // Clear Search
   const btnClearSearch = document.getElementById('btnClearSearch');
   const searchInput = document.getElementById('searchInput');
   if (searchInput && btnClearSearch) {
@@ -203,7 +165,6 @@ function setupEventListeners() {
     });
   }
 
-  // Follow-up Filter
   const btnFollowUp = document.getElementById('btnFollowUpFilter');
   if (btnFollowUp) {
     btnFollowUp.addEventListener('click', () => {
@@ -214,14 +175,12 @@ function setupEventListeners() {
     });
   }
 
-  // Export CSV
   const btnExport = document.getElementById('btnExportCSV');
   if (btnExport) btnExport.addEventListener('click', () => {
     DB.exportCSV();
     showToast('Base de datos exportada a CSV');
   });
 
-  // Clear Demo Leads
   const btnClearDemo = document.getElementById('btnClearDemoLeads');
   if (btnClearDemo) {
     btnClearDemo.addEventListener('click', () => {
@@ -233,7 +192,6 @@ function setupEventListeners() {
     });
   }
 
-  // Mobile Stage Tabs
   const stageTabs = document.querySelectorAll('#mobileStageTabs .stage-tab-btn');
   stageTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -244,7 +202,6 @@ function setupEventListeners() {
     });
   });
 
-  // Modals
   document.getElementById('btnNewLead').addEventListener('click', () => openLeadModal());
   document.getElementById('closeLeadModal').addEventListener('click', closeLeadModal);
   document.getElementById('cancelLeadModal').addEventListener('click', closeLeadModal);
@@ -256,11 +213,9 @@ function setupEventListeners() {
     document.getElementById('sheetsConfigModal').classList.add('hidden');
   });
 
-  // Views switch
   document.getElementById('viewKanbanBtn').addEventListener('click', () => setView('kanban'));
   document.getElementById('viewTableBtn').addEventListener('click', () => setView('table'));
 
-  // Founder filter
   const founderBtns = document.querySelectorAll('#founderFilter .segment-btn');
   founderBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -271,17 +226,14 @@ function setupEventListeners() {
     });
   });
 
-  // Service filter
   document.getElementById('serviceFilter').addEventListener('change', (e) => {
     activeServiceFilter = e.target.value;
     renderApp(DB.getLeads());
   });
 
-  // Forms
   document.getElementById('leadForm').addEventListener('submit', handleLeadFormSubmit);
   document.getElementById('btnDeleteLead').addEventListener('click', handleLeadDelete);
 
-  // Sheets Config Form
   document.getElementById('sheetsConfigForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const url = document.getElementById('sheetsScriptUrl').value.trim();
@@ -289,9 +241,6 @@ function setupEventListeners() {
     document.getElementById('sheetsConfigModal').classList.add('hidden');
     showToast('Configuración guardada y sincronizando...');
   });
-
-  // AI Assistant
-  document.getElementById('btnGenerateAiIdea').addEventListener('click', generateAiIdea);
 }
 
 function setView(viewType) {
@@ -360,28 +309,25 @@ function filterLeads(leads) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   return leads.filter(lead => {
-    // Founder filter
     if (activeFounderFilter !== 'ALL') {
       if (lead.assignedFounder !== activeFounderFilter && !lead.assignedFounder.includes('Ambos')) {
         return false;
       }
     }
-    // Service filter
     if (activeServiceFilter !== 'ALL') {
       if (lead.serviceType !== activeServiceFilter) return false;
     }
-    // Follow-up filter
     if (showOnlyFollowUps) {
       if (!lead.nextActionDate || lead.nextActionDate > todayStr || lead.dealStage === 'Ganado' || lead.dealStage === 'Perdido') {
         return false;
       }
     }
-    // Search query filter
     if (currentSearchQuery) {
       const matchCompany = (lead.companyName || '').toLowerCase().includes(currentSearchQuery);
       const matchContact = (lead.contactName || '').toLowerCase().includes(currentSearchQuery);
       const matchNotes = (lead.leadNotes || '').toLowerCase().includes(currentSearchQuery);
-      if (!matchCompany && !matchContact && !matchNotes) return false;
+      const matchId = (lead.id || '').toLowerCase().includes(currentSearchQuery);
+      if (!matchCompany && !matchContact && !matchNotes && !matchId) return false;
     }
     return true;
   });
@@ -482,19 +428,38 @@ function createKanbanCardEl(lead) {
     }
   }
 
+  // High Value Badge
+  let highValueBadge = '';
+  if (lead.dealValue >= 50000) {
+    highValueBadge = `<span class="tag tag-high-value">🔥 $50k+</span>`;
+  }
+
+  // Company Initials Monogram Avatar
+  const monogram = getCompanyInitials(lead.companyName);
+  const avatarBg = getCompanyColor(lead.companyName);
+
   const prefilledText = encodeURIComponent(`¡Hola ${lead.contactName || ''}! Te escribo de Flux.ai respecto a tu proyecto de automatización/IA para ${lead.companyName || ''}.`);
   const waUrl = lead.contactPhone ? `https://wa.me/${lead.contactPhone}?text=${prefilledText}` : null;
 
   card.innerHTML = `
-    <div class="card-company">
-      <span>${escapeHtml(lead.companyName)}</span>
+    <div class="card-top-bar">
+      <span class="lead-id-badge">${escapeHtml(lead.id)}</span>
+      ${highValueBadge}
     </div>
+    
+    <div class="company-avatar-row">
+      <div class="company-avatar" style="background:${avatarBg}">${monogram}</div>
+      <div class="card-company">${escapeHtml(lead.companyName)}</div>
+    </div>
+
     <div class="card-contact">👤 ${escapeHtml(lead.contactName || 'Sin contacto')}</div>
+    
     <div class="card-tags">
       <span class="tag tag-founder">👤 ${escapeHtml(lead.assignedFounder || 'Pau')}</span>
       <span class="tag tag-service">⚡ ${escapeHtml(lead.serviceType || 'IA')}</span>
       ${followUpTagHtml}
     </div>
+    
     <div class="card-footer">
       <span class="card-value mono-font">${formatCurrency(lead.dealValue)}</span>
       <div class="card-actions">
@@ -502,7 +467,7 @@ function createKanbanCardEl(lead) {
           ${DEAL_STAGES.map(s => `<option value="${s}" ${s === lead.dealStage ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
         ${waUrl ? `
-          <a href="${waUrl}" target="_blank" rel="noopener" class="card-action-btn" title="Enviar WhatsApp con mensaje preparado">
+          <a href="${waUrl}" target="_blank" rel="noopener" class="card-action-btn" title="Enviar WhatsApp preparado">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           </a>
         ` : ''}
@@ -529,11 +494,19 @@ function renderTable(leads) {
 
   leads.forEach(lead => {
     const tr = document.createElement('tr');
+    const monogram = getCompanyInitials(lead.companyName);
+    const avatarBg = getCompanyColor(lead.companyName);
     const prefilledText = encodeURIComponent(`¡Hola ${lead.contactName || ''}! Te escribo de Flux.ai respecto a tu proyecto de automatización/IA para ${lead.companyName || ''}.`);
     const waUrl = lead.contactPhone ? `https://wa.me/${lead.contactPhone}?text=${prefilledText}` : null;
 
     tr.innerHTML = `
-      <td><strong>${escapeHtml(lead.companyName)}</strong></td>
+      <td>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="lead-id-badge">${escapeHtml(lead.id)}</span>
+          <div class="company-avatar" style="background:${avatarBg}; width:24px; height:24px; font-size:0.65rem;">${monogram}</div>
+          <strong>${escapeHtml(lead.companyName)}</strong>
+        </div>
+      </td>
       <td>${escapeHtml(lead.contactName || '-')}</td>
       <td><span class="tag tag-founder">${escapeHtml(lead.assignedFounder || 'Pau')}</span></td>
       <td><span class="tag tag-service">${escapeHtml(lead.serviceType || 'IA')}</span></td>
@@ -551,35 +524,13 @@ function renderTable(leads) {
   });
 }
 
-DEAL_STAGES.forEach(stage => {
-  const col = document.querySelector(`.kanban-column[data-stage="${stage}"]`);
-  if (col) {
-    col.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      col.classList.add('drag-over');
-    });
-    col.addEventListener('dragleave', () => {
-      col.classList.remove('drag-over');
-    });
-    col.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      col.classList.remove('drag-over');
-      const leadId = e.dataTransfer.getData('text/plain');
-      if (leadId) {
-        await DB.updateLead(leadId, { dealStage: stage });
-        showToast(`Lead movido a "${stage}"`);
-      }
-    });
-  }
-});
-
 function openLeadModal(lead = null) {
   const modal = document.getElementById('leadModal');
   const title = document.getElementById('modalTitle');
   const deleteBtn = document.getElementById('btnDeleteLead');
 
   if (lead) {
-    title.textContent = `Editar Lead: ${lead.companyName}`;
+    title.textContent = `[${lead.id}] ${lead.companyName}`;
     document.getElementById('leadId').value = lead.id;
     document.getElementById('companyName').value = lead.companyName || '';
     document.getElementById('contactName').value = lead.contactName || '';
@@ -643,32 +594,24 @@ async function handleLeadDelete() {
   }
 }
 
-function generateAiIdea() {
-  const company = document.getElementById('companyName').value || 'la empresa';
-  const service = document.getElementById('serviceType').value;
-  const notes = document.getElementById('leadNotes').value || '';
-  const aiBox = document.getElementById('aiSuggestion');
-  const btnCopy = document.getElementById('btnCopyAiIdea');
-
-  let ideaText = '';
-
-  if (service.includes('Automatización')) {
-    ideaText = `💡 **Propuesta de Automatización para ${company}**:\n- Integración de formularios web/WhatsApp a CRM mediante Make/n8n.\n- Notificación automática a ${document.getElementById('assignedFounder').value} al entrar un lead.\n- Generación e inserción automática de facturas e historial de cliente.`;
-  } else if (service.includes('Chatbot')) {
-    ideaText = `🤖 **Propuesta Chatbot IA para ${company}**:\n- Agente en WhatsApp con Claude/GPT-4o capacitado con el catálogo y FAQs de ${company}.\n- Calificación de clientes en tiempo real y agendamiento automático de citas en Google Calendar.`;
-  } else if (service.includes('App IA')) {
-    ideaText = `📱 **Propuesta App IA a Medida para ${company}**:\n- Portal web/móvil con módulo de procesamiento de documentos con IA (OCR + LLM).\n- Dashboard analítico con IA predictiva de ventas.`;
-  } else {
-    ideaText = `✨ **Propuesta Consultoría IA para ${company}**:\n- Auditoría de procesos repetitivos en la empresa.\n- Plan de implementación de herramientas de Inteligencia Artificial para reducir un 40% del tiempo operativo.`;
+function getCompanyInitials(nameStr) {
+  if (!nameStr) return 'FX';
+  const parts = nameStr.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
+  return nameStr.substring(0, 2).toUpperCase();
+}
 
-  if (notes) {
-    ideaText += `\n📌 *Ajuste según notas*: "${notes}"`;
+const PALETTE = ['#0284c7', '#7c3aed', '#059669', '#d97706', '#0891b2', '#e11d48', '#4f46e5'];
+function getCompanyColor(nameStr) {
+  if (!nameStr) return PALETTE[0];
+  let hash = 0;
+  for (let i = 0; i < nameStr.length; i++) {
+    hash = nameStr.charCodeAt(i) + ((hash << 5) - hash);
   }
-
-  aiBox.innerHTML = ideaText.replace(/\n/g, '<br>');
-  aiBox.classList.remove('hidden');
-  if (btnCopy) btnCopy.classList.remove('hidden');
+  const index = Math.abs(hash) % PALETTE.length;
+  return PALETTE[index];
 }
 
 function formatCurrency(amount) {

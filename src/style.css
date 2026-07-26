@@ -306,11 +306,6 @@ body {
   color: #6d28d9;
 }
 
-.ai-ingest-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
 .ai-input-wrapper {
   display: flex;
   gap: 0.5rem;
@@ -344,11 +339,7 @@ body {
   white-space: nowrap;
 }
 
-.btn-ai-submit:hover {
-  opacity: 0.95;
-}
-
-/* Metric Strip (Linear Style) */
+/* Metric Strip */
 .kpi-strip {
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
@@ -484,31 +475,6 @@ body {
   cursor: pointer;
 }
 
-/* Mobile Stage Selection Tabs */
-.mobile-stage-tabs {
-  display: none;
-  overflow-x: auto;
-  gap: 0.4rem;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.stage-tab-btn {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
-  color: var(--text-muted);
-  padding: 0.35rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.stage-tab-btn.active {
-  background: var(--accent-black);
-  color: #ffffff;
-}
-
 /* Kanban Board Layout */
 .kanban-board {
   display: grid;
@@ -525,11 +491,6 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 600px;
-}
-
-.kanban-column.drag-over {
-  border-color: var(--accent-black);
-  background: #e4e4e7;
 }
 
 .column-header {
@@ -568,12 +529,6 @@ body {
 .stage-emerald .dot { background-color: var(--accent-emerald); }
 .stage-rose .dot { background-color: var(--accent-rose); }
 
-.column-count {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
 .column-cards {
   padding: 0.6rem;
   display: flex;
@@ -582,7 +537,7 @@ body {
   flex: 1;
 }
 
-/* Kanban Cards */
+/* VISUAL LEAD IDENTIFICATION & CARD ENHANCEMENTS */
 .lead-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
@@ -599,12 +554,51 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.card-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.lead-id-badge {
+  font-family: var(--font-mono);
+  font-size: 0.675rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: #f4f4f5;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-light);
+}
+
+.company-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.4rem;
+}
+
+.company-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.725rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
 .card-company {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 0.2rem;
   letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .card-contact {
@@ -640,6 +634,13 @@ body {
   background: #f0f9ff;
   color: var(--accent-blue);
   border-color: #e0f2fe;
+}
+
+.tag-high-value {
+  background: #fff7ed;
+  color: #c2410c;
+  border-color: #ffedd5;
+  font-weight: 600;
 }
 
 .tag-followup {
@@ -730,30 +731,6 @@ body {
 
 .leads-table tr:hover {
   background: var(--bg-subtle);
-}
-
-/* Value Presets */
-.value-presets {
-  display: flex;
-  gap: 0.35rem;
-  margin-top: 0.35rem;
-}
-
-.preset-chip {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-light);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.preset-chip:hover {
-  background: var(--accent-black);
-  color: #ffffff;
-  border-color: var(--accent-black);
 }
 
 /* Modals */
@@ -860,45 +837,6 @@ body {
   border-color: var(--accent-black);
   background: var(--bg-surface);
   box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.08);
-}
-
-.ai-box {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
-  padding: 0.85rem;
-  margin-bottom: 1.25rem;
-}
-
-.ai-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ai-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.775rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.ai-actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.ai-body {
-  margin-top: 0.65rem;
-  font-size: 0.775rem;
-  color: var(--text-main);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
-  padding: 0.75rem;
-  border-radius: var(--radius-xs);
-  line-height: 1.45;
 }
 
 .modal-footer {
