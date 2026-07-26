@@ -34,11 +34,6 @@
         <span id="syncStatusText">Google Sheets activo</span>
       </div>
 
-      <button id="btnConfigAiKey" class="btn btn-tertiary" title="Configurar API Key de OpenAI / ChatGPT">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-        <span class="hidden-mobile">API Key IA</span>
-      </button>
-
       <button id="btnConfigSheets" class="btn btn-tertiary" title="Configurar conexión con Google Sheets">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
         <span class="hidden-mobile">Sheets</span>
@@ -55,14 +50,19 @@
   <!-- Main Workspace -->
   <main class="main-container">
 
-    <!-- PROMINENT SMART AI LEAD INGESTION BAR -->
+    <!-- PROMINENT SMART AI LEAD INGESTION BAR WITH QUICK API KEY LINK -->
     <section class="ai-ingest-card">
       <div class="ai-ingest-header">
         <div class="ai-ingest-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          <span>Ingreso Rápido por Dictado o Texto</span>
+          <span>Ingreso Rápido con IA (Dictado o Texto)</span>
         </div>
-        <span class="ai-ingest-hint">Escribe o dicta lo que pasó y la IA creará todo el cliente en 1 segundo.</span>
+        
+        <div class="ai-key-status">
+          <button id="btnConfigAiKey" class="btn btn-tertiary btn-sm" title="Pegar o configurar tu clave API de OpenAI">
+            <span id="aiKeyStatusBadge">🔑 Pegar Clave API OpenAI</span>
+          </button>
+        </div>
       </div>
 
       <form id="aiIngestForm" class="ai-ingest-form">
@@ -338,21 +338,30 @@
     <div class="modal-card modal-sm">
       <div class="modal-header">
         <div>
-          <h2 class="modal-title">Configuración de API Key de IA</h2>
-          <p class="modal-subtitle">Conecta tu cuenta de OpenAI (ChatGPT) para extracción avanzada con GPT-4o.</p>
+          <h2 class="modal-title">🔑 Pegar Clave API de OpenAI (ChatGPT)</h2>
+          <p class="modal-subtitle">Pega tu clave <code>sk-...</code> para usar el modelo ultra rápido y barato <code>gpt-4o-mini</code>.</p>
         </div>
         <button id="closeAiKeyModal" class="modal-close">&times;</button>
       </div>
 
       <form id="aiKeyForm">
         <div class="form-group">
-          <label for="aiApiKeyInput">OpenAI API Key (opcional)</label>
-          <input type="password" id="aiApiKeyInput" placeholder="sk-proj-..." class="mono-font">
-          <p style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">* Si no pones API Key, el CRM utilizará el motor de IA integrado sin costo.</p>
+          <label for="aiApiKeyInput">OpenAI API Key (empieza por sk-...)</label>
+          <input type="password" id="aiApiKeyInput" placeholder="sk-proj-..." class="mono-font" required autocomplete="off">
+        </div>
+
+        <div class="form-group" style="margin-top:0.75rem;">
+          <label for="aiModelSelect">Modelo de ChatGPT (Recomendado: gpt-4o-mini)</label>
+          <select id="aiModelSelect" class="select-field">
+            <option value="gpt-4o-mini" selected>gpt-4o-mini (Ultra rápido y súper económico: ~$0.00001 / lead)</option>
+            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            <option value="gpt-4o">gpt-4o (Máxima precisión)</option>
+          </select>
         </div>
 
         <div class="modal-footer" style="margin-top:1.25rem;">
-          <button type="submit" class="btn btn-primary">Guardar API Key</button>
+          <button type="button" id="btnRemoveAiKey" class="btn btn-danger btn-sm hidden">Quitar Clave</button>
+          <button type="submit" class="btn btn-primary">Guardar Clave API</button>
         </div>
       </form>
     </div>

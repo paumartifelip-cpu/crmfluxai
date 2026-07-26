@@ -1,5 +1,5 @@
 import { DB, DEAL_STAGES } from './database.js';
-import { parseTextToLead, getSavedAiApiKey, saveAiApiKey } from './aiParser.js';
+import { parseTextToLead, getSavedAiApiKey, getSavedAiModel, saveAiApiKey } from './aiParser.js';
 
 let activeFounderFilter = 'ALL';
 let activeServiceFilter = 'ALL';
@@ -27,8 +27,27 @@ export function initApp() {
   const inputSheets = document.getElementById('sheetsScriptUrl');
   if (inputSheets) inputSheets.value = DB.getEndpointUrl();
 
-  const inputAi = document.getElementById('aiApiKeyInput');
-  if (inputAi) inputAi.value = getSavedAiApiKey();
+  updateAiKeyBadge();
+}
+
+function updateAiKeyBadge() {
+  const key = getSavedAiApiKey();
+  const model = getSavedAiModel();
+  const badge = document.getElementById('aiKeyStatusBadge');
+  const btnRemove = document.getElementById('btnRemoveAiKey');
+
+  if (badge) {
+    if (key && key.startsWith('sk-')) {
+      badge.textContent = `✅ OpenAI Activa (${model})`;
+    } else {
+      badge.textContent = `🔑 Pegar Clave API OpenAI`;
+    }
+  }
+
+  if (btnRemove) {
+    if (key) btnRemove.classList.remove('hidden');
+    else btnRemove.classList.add('hidden');
+  }
 }
 
 function showToast(message, isError = false) {
@@ -89,7 +108,7 @@ function setupEventListeners() {
         if (inputEl) inputEl.value = '';
       } catch (err) {
         console.error('Error parsing AI lead:', err);
-        showToast('Error procesando lead con IA', true);
+        showToast('Error procesando lead con IA: ' + err.message, true);
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -103,6 +122,11 @@ function setupEventListeners() {
   const btnConfigAiKey = document.getElementById('btnConfigAiKey');
   if (btnConfigAiKey) {
     btnConfigAiKey.addEventListener('click', () => {
+      const inputAi = document.getElementById('aiApiKeyInput');
+      const selectModel = document.getElementById('aiModelSelect');
+      if (inputAi) inputAi.value = getSavedAiApiKey();
+      if (selectModel) selectModel.value = getSavedAiModel();
+      updateAiKeyBadge();
       document.getElementById('aiKeyModal').classList.remove('hidden');
     });
   }
@@ -114,14 +138,27 @@ function setupEventListeners() {
     });
   }
 
+  const btnRemoveAiKey = document.getElementById('btnRemoveAiKey');
+  if (btnRemoveAiKey) {
+    btnRemoveAiKey.addEventListener('click', () => {
+      saveAiApiKey('');
+      updateAiKeyBadge();
+      document.getElementById('aiApiKeyInput').value = '';
+      document.getElementById('aiKeyModal').classList.add('hidden');
+      showToast('Clave API eliminada');
+    });
+  }
+
   const aiKeyForm = document.getElementById('aiKeyForm');
   if (aiKeyForm) {
     aiKeyForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const val = document.getElementById('aiApiKeyInput').value.trim();
-      saveAiApiKey(val);
+      const model = document.getElementById('aiModelSelect').value;
+      saveAiApiKey(val, model);
+      updateAiKeyBadge();
       document.getElementById('aiKeyModal').classList.add('hidden');
-      showToast('API Key de OpenAI guardada');
+      showToast(`Clave API de OpenAI guardada (${model})`);
     });
   }
 
@@ -541,11 +578,6 @@ function openLeadModal(lead = null) {
   const modal = document.getElementById('leadModal');
   const title = document.getElementById('modalTitle');
   const deleteBtn = document.getElementById('btnDeleteLead');
-  const aiSuggestion = document.getElementById('aiSuggestion');
-  const btnCopyAi = document.getElementById('btnCopyAiIdea');
-  
-  aiSuggestion.classList.add('hidden');
-  if (btnCopyAi) btnCopyAi.classList.add('hidden');
 
   if (lead) {
     title.textContent = `Editar Lead: ${lead.companyName}`;
@@ -569,6 +601,7 @@ function openLeadModal(lead = null) {
   }
 
   modal.classList.remove('hidden');
+  document.getElementById('companyName').focus();
 }
 
 function closeLeadModal() {
