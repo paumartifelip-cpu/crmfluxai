@@ -1,4 +1,5 @@
-import { DB, DEAL_STAGES, FOUNDERS } from './database.js';
+import { DB, DEAL_STAGES } from './database.js';
+import { parseTextToLead, getSavedAiApiKey, saveAiApiKey } from './aiParser.js';
 
 let activeFounderFilter = 'ALL';
 let activeServiceFilter = 'ALL';
@@ -22,9 +23,12 @@ export function initApp() {
   // Initial Render
   renderApp(DB.getLeads());
 
-  // Set initial endpoint input value
-  const input = document.getElementById('sheetsScriptUrl');
-  if (input) input.value = DB.getEndpointUrl();
+  // Populate config fields
+  const inputSheets = document.getElementById('sheetsScriptUrl');
+  if (inputSheets) inputSheets.value = DB.getEndpointUrl();
+
+  const inputAi = document.getElementById('aiApiKeyInput');
+  if (inputAi) inputAi.value = getSavedAiApiKey();
 }
 
 function showToast(message, isError = false) {
@@ -33,7 +37,7 @@ function showToast(message, isError = false) {
   
   const toast = document.createElement('div');
   toast.className = `toast ${isError ? 'toast-error' : ''}`;
-  toast.innerHTML = `<span>${isError ? '⚠️' : '✅'}</span> <span>${escapeHtml(message)}</span>`;
+  toast.innerHTML = `<span>${isError ? '⚠️' : '⚡'}</span> <span>${escapeHtml(message)}</span>`;
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -48,7 +52,7 @@ function updateSyncStatusUI(status) {
 
   if (!statusEl || !statusText) return;
 
-  statusText.textContent = status.message || 'Google Sheets Conectado';
+  statusText.textContent = status.message || 'Google Sheets activo';
   if (status.state === 'offline') {
     statusEl.classList.add('demo-mode');
   } else {
@@ -60,6 +64,66 @@ function setupEventListeners() {
   // Mobile FAB
   const fab = document.getElementById('fabNewLead');
   if (fab) fab.addEventListener('click', () => openLeadModal());
+
+  // SMART AI LEAD INGESTION FORM
+  const aiIngestForm = document.getElementById('aiIngestForm');
+  if (aiIngestForm) {
+    aiIngestForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const inputEl = document.getElementById('aiIngestInput');
+      const submitBtn = document.getElementById('btnSubmitAiIngest');
+      const text = inputEl ? inputEl.value.trim() : '';
+
+      if (!text) return;
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>Procesando IA...</span>';
+        }
+
+        const parsedLead = await parseTextToLead(text);
+        await DB.addLead(parsedLead);
+
+        showToast(`¡Lead creado con IA para "${parsedLead.companyName}"!`);
+        if (inputEl) inputEl.value = '';
+      } catch (err) {
+        console.error('Error parsing AI lead:', err);
+        showToast('Error procesando lead con IA', true);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Crear Lead con IA</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+        }
+      }
+    });
+  }
+
+  // AI Key Modal
+  const btnConfigAiKey = document.getElementById('btnConfigAiKey');
+  if (btnConfigAiKey) {
+    btnConfigAiKey.addEventListener('click', () => {
+      document.getElementById('aiKeyModal').classList.remove('hidden');
+    });
+  }
+
+  const closeAiKeyModal = document.getElementById('closeAiKeyModal');
+  if (closeAiKeyModal) {
+    closeAiKeyModal.addEventListener('click', () => {
+      document.getElementById('aiKeyModal').classList.add('hidden');
+    });
+  }
+
+  const aiKeyForm = document.getElementById('aiKeyForm');
+  if (aiKeyForm) {
+    aiKeyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = document.getElementById('aiApiKeyInput').value.trim();
+      saveAiApiKey(val);
+      document.getElementById('aiKeyModal').classList.add('hidden');
+      showToast('API Key de OpenAI guardada');
+    });
+  }
 
   // Value Preset Chips ($15k, $30k, $50k, $100k)
   const presetChips = document.querySelectorAll('.preset-chip');
@@ -160,7 +224,7 @@ function setupEventListeners() {
   document.getElementById('viewTableBtn').addEventListener('click', () => setView('table'));
 
   // Founder filter
-  const founderBtns = document.querySelectorAll('#founderFilter .founder-btn');
+  const founderBtns = document.querySelectorAll('#founderFilter .segment-btn');
   founderBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       founderBtns.forEach(b => b.classList.remove('active'));
@@ -395,14 +459,14 @@ function createKanbanCardEl(lead) {
       ${followUpTagHtml}
     </div>
     <div class="card-footer">
-      <span class="card-value">${formatCurrency(lead.dealValue)}</span>
+      <span class="card-value mono-font">${formatCurrency(lead.dealValue)}</span>
       <div class="card-actions">
         <select class="quick-stage-select" title="Mover etapa rápidamente">
           ${DEAL_STAGES.map(s => `<option value="${s}" ${s === lead.dealStage ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
         ${waUrl ? `
           <a href="${waUrl}" target="_blank" rel="noopener" class="card-action-btn" title="Enviar WhatsApp con mensaje preparado">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           </a>
         ` : ''}
       </div>
@@ -438,11 +502,11 @@ function renderTable(leads) {
       <td><span class="tag tag-founder">${escapeHtml(lead.assignedFounder || 'Pau')}</span></td>
       <td><span class="tag tag-service">${escapeHtml(lead.serviceType || 'IA')}</span></td>
       <td><span class="tag">${escapeHtml(lead.dealStage)}</span></td>
-      <td><strong>${formatCurrency(lead.dealValue)}</strong></td>
-      <td>${lead.nextActionDate ? escapeHtml(lead.nextActionDate) : '-'}</td>
+      <td><strong class="mono-font">${formatCurrency(lead.dealValue)}</strong></td>
+      <td class="mono-font">${lead.nextActionDate ? escapeHtml(lead.nextActionDate) : '-'}</td>
       <td>
         <button class="btn btn-sm btn-secondary btn-edit-lead">Editar</button>
-        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-sm btn-outline-purple">WhatsApp</a>` : ''}
+        ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-sm btn-tertiary">WhatsApp</a>` : ''}
       </td>
     `;
 
@@ -505,7 +569,6 @@ function openLeadModal(lead = null) {
   }
 
   modal.classList.remove('hidden');
-  document.getElementById('companyName').focus();
 }
 
 function closeLeadModal() {

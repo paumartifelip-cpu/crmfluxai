@@ -278,6 +278,76 @@ body {
   padding: 1.25rem 1.5rem;
 }
 
+/* SMART AI LEAD INGESTION CARD */
+.ai-ingest-card {
+  background: #ffffff;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.05);
+}
+
+.ai-ingest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ai-ingest-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #6d28d9;
+}
+
+.ai-ingest-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ai-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ai-input-wrapper input {
+  flex: 1;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ai-input-wrapper input:focus {
+  border-color: #7c3aed;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.btn-ai-submit {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+  height: 42px;
+  padding: 0 1.1rem;
+  white-space: nowrap;
+}
+
+.btn-ai-submit:hover {
+  opacity: 0.95;
+}
+
 /* Metric Strip (Linear Style) */
 .kpi-strip {
   background: var(--bg-surface);
@@ -357,7 +427,6 @@ body {
   flex-wrap: wrap;
 }
 
-/* Segmented Control (Linear / Raycast Tabs) */
 .segmented-control {
   display: flex;
   background: #e4e4e7;
@@ -513,7 +582,7 @@ body {
   flex: 1;
 }
 
-/* Kanban Cards — Hairline Precision Card */
+/* Kanban Cards */
 .lead-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
@@ -885,6 +954,13 @@ body {
   }
   .fab-add-mobile {
     display: flex;
+  }
+  .ai-input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-ai-submit {
+    width: 100%;
   }
   .kpi-strip {
     flex-direction: column;
