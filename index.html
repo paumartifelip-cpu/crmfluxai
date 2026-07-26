@@ -50,7 +50,7 @@
   <!-- Main Workspace -->
   <main class="main-container">
 
-    <!-- PROMINENT SMART AI LEAD INGESTION BAR WITH QUICK API KEY LINK -->
+    <!-- PROMINENT SMART AI LEAD INGESTION BAR WITH CONFIRMED PRE-CONFIGURED KEY -->
     <section class="ai-ingest-card">
       <div class="ai-ingest-header">
         <div class="ai-ingest-title">
@@ -59,8 +59,8 @@
         </div>
         
         <div class="ai-key-status">
-          <button id="btnConfigAiKey" class="btn btn-tertiary btn-sm" title="Pegar o configurar tu clave API de OpenAI">
-            <span id="aiKeyStatusBadge">🔑 Pegar Clave API OpenAI</span>
+          <button id="btnConfigAiKey" class="btn btn-tertiary btn-sm" title="Tu clave API de OpenAI está configurada permanentemente en el código">
+            <span id="aiKeyStatusBadge">✅ OpenAI Activa (gpt-4o-mini)</span>
           </button>
         </div>
       </div>
@@ -338,15 +338,15 @@
     <div class="modal-card modal-sm">
       <div class="modal-header">
         <div>
-          <h2 class="modal-title">🔑 Pegar Clave API de OpenAI (ChatGPT)</h2>
-          <p class="modal-subtitle">Pega tu clave <code>sk-...</code> para usar el modelo ultra rápido y barato <code>gpt-4o-mini</code>.</p>
+          <h2 class="modal-title">✅ Clave API de OpenAI Configurada</h2>
+          <p class="modal-subtitle">Tu clave de OpenAI está integrada en el código y lista con el modelo ultra rápido y barato <code>gpt-4o-mini</code>.</p>
         </div>
         <button id="closeAiKeyModal" class="modal-close">&times;</button>
       </div>
 
       <form id="aiKeyForm">
         <div class="form-group">
-          <label for="aiApiKeyInput">OpenAI API Key (empieza por sk-...)</label>
+          <label for="aiApiKeyInput">OpenAI API Key (Pre-configurada)</label>
           <input type="password" id="aiApiKeyInput" placeholder="sk-proj-..." class="mono-font" required autocomplete="off">
         </div>
 
@@ -360,8 +360,8 @@
         </div>
 
         <div class="modal-footer" style="margin-top:1.25rem;">
-          <button type="button" id="btnRemoveAiKey" class="btn btn-danger btn-sm hidden">Quitar Clave</button>
-          <button type="submit" class="btn btn-primary">Guardar Clave API</button>
+          <button type="button" id="btnRemoveAiKey" class="btn btn-danger btn-sm hidden">Resetear Clave</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         </div>
       </form>
     </div>

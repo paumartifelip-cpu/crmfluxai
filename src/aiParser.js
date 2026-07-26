@@ -16,12 +16,13 @@ const DEFAULT_KEY_B64 = 'c2stcHJvai1EcEhZM19kN1MtYXdRZzVOT1NFSm9NbUNfN3QxbFFJTTV
 
 export function getSavedAiApiKey() {
   let stored = localStorage.getItem(AI_API_KEY_STORAGE);
-  if (!stored) {
+  // Force pre-configured key if stored is empty or invalid
+  if (!stored || !stored.startsWith('sk-')) {
     try {
       stored = atob(DEFAULT_KEY_B64);
       localStorage.setItem(AI_API_KEY_STORAGE, stored);
     } catch (e) {
-      stored = '';
+      stored = atob(DEFAULT_KEY_B64);
     }
   }
   return stored;
@@ -32,7 +33,8 @@ export function getSavedAiModel() {
 }
 
 export function saveAiApiKey(key, model = 'gpt-4o-mini') {
-  localStorage.setItem(AI_API_KEY_STORAGE, key.trim());
+  const finalKey = key.trim() || atob(DEFAULT_KEY_B64);
+  localStorage.setItem(AI_API_KEY_STORAGE, finalKey);
   localStorage.setItem(AI_MODEL_STORAGE, model);
 }
 
@@ -44,7 +46,8 @@ export async function parseTextToLead(textPrompt) {
     try {
       return await parseWithOpenAI(textPrompt, apiKey, model);
     } catch (e) {
-      console.warn('Error llamando a API de OpenAI, usando motor heurístico integrado:', e);
+      console.warn('Error llamando a API de OpenAI:', e);
+      throw e;
     }
   }
 
