@@ -1,4 +1,4 @@
-// Google Sheets Integration Module via Apps Script Web App Endpoint
+// Google Sheets Integration Module with Robust Offline Sync & Formatting
 
 const SHEETS_URL_KEY = 'flux_crm_sheets_url';
 const LOCAL_LEADS_KEY = 'flux_crm_local_leads';
@@ -12,13 +12,13 @@ const DEFAULT_INITIAL_LEADS = [
     id: 'demo-lead-1',
     companyName: 'Grupo Hotelero Cancún',
     contactName: 'Carlos Mendoza',
-    contactPhone: '529981234567',
+    contactPhone: '5512345678',
     contactEmail: 'carlos@hotelcuba.com',
     assignedFounder: 'Pau Martí',
     serviceType: 'Chatbot Inteligente',
     dealStage: 'Reunión / Demo',
     dealValue: 65000,
-    nextActionDate: '2026-07-28',
+    nextActionDate: new Date().toISOString().split('T')[0],
     leadNotes: 'Interesados en chatbot multilingüe para atención a huéspedes por WhatsApp.',
     createdAt: new Date().toISOString()
   },
@@ -26,13 +26,13 @@ const DEFAULT_INITIAL_LEADS = [
     id: 'demo-lead-2',
     companyName: 'Agencia Logística Monterrey',
     contactName: 'Sofía Garza',
-    contactPhone: '528181239876',
+    contactPhone: '8181239876',
     contactEmail: 'sofia@logisticamty.mx',
     assignedFounder: 'Mikel Canals',
     serviceType: 'Automatización Make/n8n',
     dealStage: 'Propuesta Enviada',
     dealValue: 45000,
-    nextActionDate: '2026-07-27',
+    nextActionDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     leadNotes: 'Automatizar extracción de PDFs de facturas e ingreso a su ERP con IA.',
     createdAt: new Date().toISOString()
   }
@@ -64,7 +64,7 @@ export function resetSheetsUrl() {
   return initSheets();
 }
 
-// Fetch leads from Google Sheets with timeout resilience
+// Fallo 1 Fix: Reliable Sync with Timeout Resilience
 export async function fetchLeads() {
   if (sheetsScriptUrl) {
     try {
@@ -73,15 +73,45 @@ export async function fetchLeads() {
       const response = await fetch(sheetsScriptUrl + '?action=getLeads', { signal: controller.signal });
       clearTimeout(timeoutId);
       const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         saveLocalLeads(data);
         return data;
       }
     } catch (e) {
-      console.warn('Google Sheets fetch offline or slow, loading local cache:', e);
+      console.warn('Google Sheets fetch timeout or offline, loading cached leads:', e);
     }
   }
   return getLocalLeads();
+}
+
+// Fallo 2 Fix: Clear all demo leads helper
+export function clearDemoLeads() {
+  saveLocalLeads([]);
+  if (sheetsScriptUrl) {
+    fetch(sheetsScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clearAllLeads' })
+    }).catch(() => {});
+  }
+}
+
+// Fallo 8 Fix: Auto-format Mexican and International WhatsApp Numbers
+export function formatWhatsAppPhone(phoneStr) {
+  if (!phoneStr) return '';
+  let cleaned = phoneStr.replace(/\D/g, '');
+  if (!cleaned) return '';
+  
+  // If user entered 10 digits (standard Mexico phone without country code)
+  if (cleaned.length === 10) {
+    return '52' + cleaned;
+  }
+  // If user entered 11 digits starting with 1 (US/CA) or 521 (old MX format)
+  if (cleaned.length === 11 && cleaned.startsWith('521')) {
+    return '52' + cleaned.substring(3);
+  }
+  return cleaned;
 }
 
 // Add New Lead
@@ -98,16 +128,12 @@ export async function addLead(leadData) {
   saveLocalLeads(leads);
 
   if (sheetsScriptUrl) {
-    try {
-      fetch(sheetsScriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'addLead', lead: newLead })
-      }).catch(err => console.error('Error background sync add lead:', err));
-    } catch (e) {
-      console.error('Sync error:', e);
-    }
+    fetch(sheetsScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'addLead', lead: newLead })
+    }).catch(err => console.error('Error background sync add lead:', err));
   }
   return newLead;
 }
@@ -125,16 +151,12 @@ export async function updateLead(leadId, updatedFields) {
     saveLocalLeads(leads);
 
     if (sheetsScriptUrl) {
-      try {
-        fetch(sheetsScriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'updateLead', lead: leads[index] })
-        }).catch(err => console.error('Error background sync update lead:', err));
-      } catch (e) {
-        console.error('Sync error:', e);
-      }
+      fetch(sheetsScriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateLead', lead: leads[index] })
+      }).catch(err => console.error('Error background sync update lead:', err));
     }
   }
 }
@@ -146,16 +168,12 @@ export async function deleteLead(leadId) {
   saveLocalLeads(leads);
 
   if (sheetsScriptUrl) {
-    try {
-      fetch(sheetsScriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteLead', leadId: leadId })
-      }).catch(err => console.error('Error background sync delete lead:', err));
-    } catch (e) {
-      console.error('Sync error:', e);
-    }
+    fetch(sheetsScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteLead', leadId: leadId })
+    }).catch(err => console.error('Error background sync delete lead:', err));
   }
 }
 
@@ -192,7 +210,12 @@ export function exportLeadsToCSV(leads) {
 function getLocalLeads() {
   const data = localStorage.getItem(LOCAL_LEADS_KEY);
   if (!data) return DEFAULT_INITIAL_LEADS;
-  try { return JSON.parse(data); } catch (e) { return DEFAULT_INITIAL_LEADS; }
+  try { 
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : DEFAULT_INITIAL_LEADS;
+  } catch (e) { 
+    return DEFAULT_INITIAL_LEADS; 
+  }
 }
 
 function saveLocalLeads(leads) {

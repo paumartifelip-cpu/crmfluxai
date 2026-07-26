@@ -42,7 +42,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Typography Helpers */
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
 }
@@ -53,6 +52,22 @@ h1, h2, h3, h4 {
 
 .hidden {
   display: none !important;
+}
+
+/* Badges */
+.badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  margin-left: 0.3rem;
+}
+
+.badge-rose {
+  background: var(--accent-rose);
+  color: white;
 }
 
 /* Toast Notification Floating Container */
@@ -164,15 +179,6 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 8px var(--accent-emerald);
 }
 
-.sync-indicator.demo-mode {
-  background: rgba(245, 158, 11, 0.1);
-}
-
-.sync-indicator.demo-mode .sync-dot {
-  background-color: var(--accent-amber);
-  box-shadow: 0 0 8px var(--accent-amber);
-}
-
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -186,7 +192,7 @@ h1, h2, h3, h4 {
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
-  min-height: 44px; /* Touch target minimum */
+  min-height: 44px;
   transition: all 0.2s ease;
 }
 
@@ -237,6 +243,15 @@ h1, h2, h3, h4 {
   padding: 0.4rem 0.8rem;
   font-size: 0.825rem;
   min-height: 38px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.4rem;
 }
 
 /* Floating Add Button for Mobile */
@@ -384,6 +399,8 @@ h1, h2, h3, h4 {
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 38px;
+  display: flex;
+  align-items: center;
 }
 
 .founder-btn.active {
@@ -429,7 +446,7 @@ h1, h2, h3, h4 {
   color: var(--text-main);
 }
 
-/* Mobile Stage Horizontal Selector Tabs */
+/* Mobile Stage Selection Tabs */
 .mobile-stage-tabs {
   display: none;
   overflow-x: auto;
@@ -592,6 +609,18 @@ h1, h2, h3, h4 {
   border-color: rgba(16, 185, 129, 0.25);
 }
 
+.tag-followup {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fde047;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.tag-overdue {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fda4af;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
 .card-footer {
   display: flex;
   justify-content: space-between;
@@ -635,7 +664,7 @@ h1, h2, h3, h4 {
 }
 
 .card-action-btn:hover {
-  color: #25d366; /* WhatsApp color */
+  color: #25d366;
 }
 
 /* Table View */
@@ -668,6 +697,54 @@ h1, h2, h3, h4 {
 
 .leads-table tr:hover {
   background: var(--bg-card-hover);
+}
+
+/* Value Presets (Fix 3) */
+.value-presets {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.preset-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-chip:hover {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+/* Sheets Config Status Card (Fix 10) */
+.sheets-status-card {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-badge-green {
+  color: var(--accent-emerald);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.status-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 /* Modals */
@@ -757,7 +834,7 @@ h1, h2, h3, h4 {
   padding: 0.7rem 0.85rem;
   color: var(--text-main);
   font-family: var(--font-body);
-  font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+  font-size: 16px;
   outline: none;
 }
 
@@ -768,7 +845,6 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
 }
 
-/* AI Assistant Block */
 .ai-assistant-box {
   background: rgba(139, 92, 246, 0.08);
   border: 1px dashed rgba(139, 92, 246, 0.4);
@@ -781,6 +857,11 @@ h1, h2, h3, h4 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-actions-btns {
+  display: flex;
   gap: 0.5rem;
 }
 
@@ -814,7 +895,6 @@ h1, h2, h3, h4 {
   margin-left: auto;
 }
 
-/* Media Queries for Mobile & Tablet Responsiveness */
 @media (max-width: 900px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -840,7 +920,7 @@ h1, h2, h3, h4 {
   }
 
   .header-actions #btnNewLead {
-    display: none; /* Hide top new lead button on mobile, use FAB */
+    display: none;
   }
 
   .fab-add-mobile {
@@ -883,7 +963,6 @@ h1, h2, h3, h4 {
     display: flex;
   }
 
-  /* Full-width cards in single stage view on mobile when tab clicked */
   .kanban-board.mobile-single-view {
     grid-template-columns: 1fr;
   }
@@ -905,6 +984,6 @@ h1, h2, h3, h4 {
   }
   .founder-btn {
     flex: 1;
-    text-align: center;
+    justify-content: center;
   }
 }

@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-D5T7_nbt.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DW8uo0Mh.css">
+  <script type="module" crossorigin src="/assets/index-ts6TMt_f.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CRGFxCui.css">
 </head>
 <body class="bg-dark text-light">
   <!-- Toast Notification Container -->
@@ -86,15 +86,22 @@
       <div class="search-box">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <input type="text" id="searchInput" placeholder="Buscar por empresa, contacto o notas...">
+        <button id="btnClearSearch" class="btn-icon hidden" title="Limpiar búsqueda">&times;</button>
       </div>
 
       <div class="filter-group">
-        <!-- Founder Filter -->
+        <!-- Founder Filter with Live Counts (Fix 9) -->
         <div class="founder-filter-buttons" id="founderFilter">
-          <button class="founder-btn active" data-founder="ALL">Todos</button>
-          <button class="founder-btn" data-founder="Pau Martí">Pau</button>
-          <button class="founder-btn" data-founder="Mikel Canals">Mikel</button>
+          <button class="founder-btn active" data-founder="ALL">Todos <span id="countAllFounder" class="badge">0</span></button>
+          <button class="founder-btn" data-founder="Pau Martí">Pau <span id="countPau" class="badge">0</span></button>
+          <button class="founder-btn" data-founder="Mikel Canals">Mikel <span id="countMikel" class="badge">0</span></button>
         </div>
+
+        <!-- Follow-up Filter (Fix 6) -->
+        <button id="btnFollowUpFilter" class="btn btn-secondary btn-sm" title="Filtrar clientes pendientes de hoy o vencidos">
+          <span>📅 Hoy/Pendientes</span>
+          <span id="badgeFollowUp" class="badge badge-rose">0</span>
+        </button>
 
         <!-- Service Filter -->
         <select id="serviceFilter" class="select-input">
@@ -196,6 +203,7 @@
             <th>Servicio IA</th>
             <th>Estado</th>
             <th>Valor ($ MXN)</th>
+            <th>Seguimiento</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -221,7 +229,7 @@
         <div class="form-grid">
           <div class="form-group col-span-2">
             <label for="companyName">Empresa / Negocio *</label>
-            <input type="text" id="companyName" required placeholder="Ej. Restaurantes Grupo Maya">
+            <input type="text" id="companyName" required placeholder="Ej. Restaurantes Grupo Maya" autofocus>
           </div>
 
           <div class="form-group">
@@ -230,8 +238,8 @@
           </div>
 
           <div class="form-group">
-            <label for="contactPhone">WhatsApp / Teléfono</label>
-            <input type="tel" id="contactPhone" placeholder="Ej. 5215512345678">
+            <label for="contactPhone">WhatsApp / Teléfono (10 dígitos)</label>
+            <input type="tel" id="contactPhone" placeholder="Ej. 5512345678">
           </div>
 
           <div class="form-group">
@@ -274,9 +282,16 @@
           <div class="form-group">
             <label for="dealValue">Valor Estimado ($ MXN)</label>
             <input type="number" id="dealValue" min="0" step="1000" placeholder="Ej. 35000">
+            <!-- Fix 3: Quick Value Preset Chips -->
+            <div class="value-presets">
+              <button type="button" class="preset-chip" data-val="15000">$15k</button>
+              <button type="button" class="preset-chip" data-val="30000">$30k</button>
+              <button type="button" class="preset-chip" data-val="50000">$50k</button>
+              <button type="button" class="preset-chip" data-val="100000">$100k</button>
+            </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group col-span-2">
             <label for="nextActionDate">Fecha de Próximo Seguimiento</label>
             <input type="date" id="nextActionDate">
           </div>
@@ -291,9 +306,14 @@
         <div class="ai-assistant-box">
           <div class="ai-header">
             <span class="ai-sparkle">✨ Flux.ai Assistant</span>
-            <button type="button" id="btnGenerateAiIdea" class="btn btn-sm btn-outline-purple">
-              Generar Idea de Automatización
-            </button>
+            <div class="ai-actions-btns">
+              <button type="button" id="btnCopyAiIdea" class="btn btn-sm btn-secondary hidden">
+                📋 Copiar Texto
+              </button>
+              <button type="button" id="btnGenerateAiIdea" class="btn btn-sm btn-outline-purple">
+                Generar Idea de Automatización
+              </button>
+            </div>
           </div>
           <div id="aiSuggestion" class="ai-suggestion-text hidden">
             Haz clic en el botón para generar sugerencias automáticas de propuesta para este cliente.
@@ -311,27 +331,34 @@
     </div>
   </div>
 
-  <!-- Modal: Configuración de Google Sheets -->
+  <!-- Modal: Configuración de Google Sheets (Fix 10) -->
   <div id="sheetsConfigModal" class="modal-overlay hidden">
     <div class="modal-content modal-md">
       <div class="modal-header">
-        <h2>📊 Conectar Google Sheets</h2>
+        <h2>📊 Google Sheets Sincronización</h2>
         <button id="closeSheetsModal" class="close-btn">&times;</button>
       </div>
 
-      <div class="firebase-instructions">
-        <p>Tu CRM ya está conectado a tu Google Sheet. Si deseas cambiar de hoja en el futuro, pega aquí tu nuevo enlace de Google Apps Script.</p>
+      <div class="sheets-status-card">
+        <span class="status-badge-green">✅ Sincronización Activa con tu Google Sheet</span>
+        <p class="status-desc">Cualquier lead agregado o modificado se guarda en vivo para <strong>Pau Martí</strong> y <strong>Mikel Canals</strong>.</p>
+        <a id="linkOpenGoogleSheet" href="https://docs.google.com/spreadsheets" target="_blank" class="btn btn-outline-purple btn-sm">
+          🔗 Abrir Hoja de Google Sheets
+        </a>
       </div>
 
       <form id="sheetsConfigForm">
-        <div class="form-group">
-          <label for="sheetsScriptUrl">URL de la App Web de Google Apps Script *</label>
+        <div class="form-group" style="margin-top:1.25rem;">
+          <label for="sheetsScriptUrl">URL de Google Apps Script Web App</label>
           <input type="url" id="sheetsScriptUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" required>
         </div>
 
-        <div class="modal-actions">
-          <button type="button" id="btnResetSheets" class="btn btn-outline-danger">Usar Modo Demo Local</button>
-          <button type="submit" class="btn btn-primary">Guardar Enlace</button>
+        <div class="modal-actions" style="margin-top:1.5rem;">
+          <!-- Fix 2: Clear Demo Leads button -->
+          <button type="button" id="btnClearDemoLeads" class="btn btn-outline-danger btn-sm">
+            🧹 Limpiar Leads de Prueba
+          </button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         </div>
       </form>
     </div>

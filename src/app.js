@@ -1,31 +1,30 @@
-import { 
-  initSheets, 
-  getSavedSheetsUrl, 
-  saveSheetsUrl, 
-  resetSheetsUrl, 
-  fetchLeads, 
-  addLead, 
-  updateLead, 
-  deleteLead,
-  exportLeadsToCSV 
-} from './sheets.js';
+import { DB, DEAL_STAGES, FOUNDERS } from './database.js';
 
-let currentLeads = [];
 let activeFounderFilter = 'ALL';
 let activeServiceFilter = 'ALL';
 let activeMobileStage = 'ALL';
+let showOnlyFollowUps = false;
 let currentSearchQuery = '';
 
-const STAGES = ['Nuevo Lead', 'Contactado', 'Reunión / Demo', 'Propuesta Enviada', 'Ganado', 'Perdido'];
-
-export async function initApp() {
-  initSheets();
+export function initApp() {
   setupEventListeners();
-  await loadAndRenderLeads();
-  
-  const savedUrl = getSavedSheetsUrl();
+
+  // Subscribe to DB changes
+  DB.subscribe((leads) => {
+    renderApp(leads);
+  });
+
+  // Subscribe to Sync Status
+  DB.subscribeSyncStatus((status) => {
+    updateSyncStatusUI(status);
+  });
+
+  // Initial Render
+  renderApp(DB.getLeads());
+
+  // Set initial endpoint input value
   const input = document.getElementById('sheetsScriptUrl');
-  if (input) input.value = savedUrl;
+  if (input) input.value = DB.getEndpointUrl();
 }
 
 function showToast(message, isError = false) {
@@ -43,9 +42,18 @@ function showToast(message, isError = false) {
   }, 3500);
 }
 
-async function loadAndRenderLeads() {
-  currentLeads = await fetchLeads();
-  renderApp();
+function updateSyncStatusUI(status) {
+  const statusEl = document.getElementById('syncStatus');
+  const statusText = document.getElementById('syncStatusText');
+
+  if (!statusEl || !statusText) return;
+
+  statusText.textContent = status.message || 'Google Sheets Conectado';
+  if (status.state === 'offline') {
+    statusEl.classList.add('demo-mode');
+  } else {
+    statusEl.classList.remove('demo-mode');
+  }
 }
 
 function setupEventListeners() {
@@ -53,12 +61,76 @@ function setupEventListeners() {
   const fab = document.getElementById('fabNewLead');
   if (fab) fab.addEventListener('click', () => openLeadModal());
 
+  // Value Preset Chips ($15k, $30k, $50k, $100k)
+  const presetChips = document.querySelectorAll('.preset-chip');
+  presetChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.getAttribute('data-val');
+      const valInput = document.getElementById('dealValue');
+      if (valInput) valInput.value = val;
+    });
+  });
+
+  // Copy AI Pitch
+  const btnCopyAi = document.getElementById('btnCopyAiIdea');
+  if (btnCopyAi) {
+    btnCopyAi.addEventListener('click', () => {
+      const aiBox = document.getElementById('aiSuggestion');
+      if (aiBox) {
+        navigator.clipboard.writeText(aiBox.innerText);
+        showToast('Propuesta copiada al portapapeles');
+      }
+    });
+  }
+
+  // Clear Search
+  const btnClearSearch = document.getElementById('btnClearSearch');
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput && btnClearSearch) {
+    searchInput.addEventListener('input', (e) => {
+      currentSearchQuery = e.target.value.toLowerCase().trim();
+      if (currentSearchQuery) btnClearSearch.classList.remove('hidden');
+      else btnClearSearch.classList.add('hidden');
+      renderApp(DB.getLeads());
+    });
+
+    btnClearSearch.addEventListener('click', () => {
+      searchInput.value = '';
+      currentSearchQuery = '';
+      btnClearSearch.classList.add('hidden');
+      renderApp(DB.getLeads());
+    });
+  }
+
+  // Follow-up Filter
+  const btnFollowUp = document.getElementById('btnFollowUpFilter');
+  if (btnFollowUp) {
+    btnFollowUp.addEventListener('click', () => {
+      showOnlyFollowUps = !showOnlyFollowUps;
+      btnFollowUp.classList.toggle('btn-primary', showOnlyFollowUps);
+      btnFollowUp.classList.toggle('btn-secondary', !showOnlyFollowUps);
+      renderApp(DB.getLeads());
+    });
+  }
+
   // Export CSV
   const btnExport = document.getElementById('btnExportCSV');
   if (btnExport) btnExport.addEventListener('click', () => {
-    exportLeadsToCSV(filterLeads(currentLeads));
-    showToast('Leads exportados a CSV con éxito');
+    DB.exportCSV();
+    showToast('Base de datos exportada a CSV');
   });
+
+  // Clear Demo Leads
+  const btnClearDemo = document.getElementById('btnClearDemoLeads');
+  if (btnClearDemo) {
+    btnClearDemo.addEventListener('click', () => {
+      if (confirm('¿Quieres eliminar los leads de prueba e iniciar con la base vacía?')) {
+        DB.clearDemoLeads();
+        document.getElementById('sheetsConfigModal').classList.add('hidden');
+        showToast('Leads de prueba eliminados');
+      }
+    });
+  }
 
   // Mobile Stage Tabs
   const stageTabs = document.querySelectorAll('#mobileStageTabs .stage-tab-btn');
@@ -67,7 +139,7 @@ function setupEventListeners() {
       stageTabs.forEach(t => t.classList.remove('active'));
       e.target.classList.add('active');
       activeMobileStage = e.target.getAttribute('data-stage');
-      renderApp();
+      renderApp(DB.getLeads());
     });
   });
 
@@ -94,20 +166,14 @@ function setupEventListeners() {
       founderBtns.forEach(b => b.classList.remove('active'));
       e.target.classList.add('active');
       activeFounderFilter = e.target.getAttribute('data-founder');
-      renderApp();
+      renderApp(DB.getLeads());
     });
   });
 
   // Service filter
   document.getElementById('serviceFilter').addEventListener('change', (e) => {
     activeServiceFilter = e.target.value;
-    renderApp();
-  });
-
-  // Search input
-  document.getElementById('searchInput').addEventListener('input', (e) => {
-    currentSearchQuery = e.target.value.toLowerCase().trim();
-    renderApp();
+    renderApp(DB.getLeads());
   });
 
   // Forms
@@ -115,20 +181,12 @@ function setupEventListeners() {
   document.getElementById('btnDeleteLead').addEventListener('click', handleLeadDelete);
 
   // Sheets Config Form
-  document.getElementById('sheetsConfigForm').addEventListener('submit', async (e) => {
+  document.getElementById('sheetsConfigForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const url = document.getElementById('sheetsScriptUrl').value.trim();
-    saveSheetsUrl(url);
+    DB.setEndpointUrl(url);
     document.getElementById('sheetsConfigModal').classList.add('hidden');
-    showToast('Enlace de Google Sheets guardado');
-    await loadAndRenderLeads();
-  });
-
-  document.getElementById('btnResetSheets').addEventListener('click', async () => {
-    resetSheetsUrl();
-    document.getElementById('sheetsConfigModal').classList.add('hidden');
-    showToast('CRM cambiado a Modo Demo Local');
-    await loadAndRenderLeads();
+    showToast('Configuración guardada y sincronizando...');
   });
 
   // AI Assistant
@@ -154,23 +212,70 @@ function setView(viewType) {
   }
 }
 
-function renderApp() {
-  const filteredLeads = filterLeads(currentLeads);
+function renderApp(allLeads) {
+  updateFounderBadges(allLeads);
+  updateFollowUpBadge(allLeads);
+
+  const filteredLeads = filterLeads(allLeads);
   renderKPIs(filteredLeads);
   renderKanban(filteredLeads);
   renderTable(filteredLeads);
 }
 
+function updateFounderBadges(allLeads) {
+  let countAll = allLeads.length;
+  let countPau = 0;
+  let countMikel = 0;
+
+  allLeads.forEach(l => {
+    if (l.assignedFounder === 'Pau Martí' || l.assignedFounder === 'Ambos (Pau & Mikel)') countPau++;
+    if (l.assignedFounder === 'Mikel Canals' || l.assignedFounder === 'Ambos (Pau & Mikel)') countMikel++;
+  });
+
+  const cAll = document.getElementById('countAllFounder');
+  const cPau = document.getElementById('countPau');
+  const cMikel = document.getElementById('countMikel');
+
+  if (cAll) cAll.textContent = countAll;
+  if (cPau) cPau.textContent = countPau;
+  if (cMikel) cMikel.textContent = countMikel;
+}
+
+function updateFollowUpBadge(allLeads) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  let pendingCount = 0;
+
+  allLeads.forEach(l => {
+    if (l.nextActionDate && l.nextActionDate <= todayStr && l.dealStage !== 'Ganado' && l.dealStage !== 'Perdido') {
+      pendingCount++;
+    }
+  });
+
+  const badge = document.getElementById('badgeFollowUp');
+  if (badge) badge.textContent = pendingCount;
+}
+
 function filterLeads(leads) {
+  const todayStr = new Date().toISOString().split('T')[0];
+
   return leads.filter(lead => {
+    // Founder filter
     if (activeFounderFilter !== 'ALL') {
       if (lead.assignedFounder !== activeFounderFilter && lead.assignedFounder !== 'Ambos (Pau & Mikel)') {
         return false;
       }
     }
+    // Service filter
     if (activeServiceFilter !== 'ALL') {
       if (lead.serviceType !== activeServiceFilter) return false;
     }
+    // Follow-up filter
+    if (showOnlyFollowUps) {
+      if (!lead.nextActionDate || lead.nextActionDate > todayStr || lead.dealStage === 'Ganado' || lead.dealStage === 'Perdido') {
+        return false;
+      }
+    }
+    // Search query filter
     if (currentSearchQuery) {
       const matchCompany = (lead.companyName || '').toLowerCase().includes(currentSearchQuery);
       const matchContact = (lead.contactName || '').toLowerCase().includes(currentSearchQuery);
@@ -209,14 +314,13 @@ function renderKPIs(leads) {
 function renderKanban(leads) {
   const board = document.getElementById('kanbanView');
 
-  // Handle Mobile Single Stage View vs All Stages
   if (window.innerWidth <= 768 && activeMobileStage !== 'ALL') {
     board.classList.add('mobile-single-view');
   } else {
     board.classList.remove('mobile-single-view');
   }
 
-  STAGES.forEach(stage => {
+  DEAL_STAGES.forEach(stage => {
     const col = document.querySelector(`.kanban-column[data-stage="${stage}"]`);
     const cardContainer = document.getElementById(`cards-${stage}`);
     const countEl = document.getElementById(`count-${stage}`);
@@ -234,7 +338,7 @@ function renderKanban(leads) {
   });
 
   const stageCounts = {};
-  STAGES.forEach(s => stageCounts[s] = 0);
+  DEAL_STAGES.forEach(s => stageCounts[s] = 0);
 
   leads.forEach(lead => {
     const stage = lead.dealStage || 'Nuevo Lead';
@@ -247,7 +351,7 @@ function renderKanban(leads) {
     }
   });
 
-  STAGES.forEach(stage => {
+  DEAL_STAGES.forEach(stage => {
     const countEl = document.getElementById(`count-${stage}`);
     if (countEl) countEl.textContent = stageCounts[stage] || 0;
   });
@@ -267,9 +371,18 @@ function createKanbanCardEl(lead) {
     openLeadModal(lead);
   });
 
-  const cleanPhone = (lead.contactPhone || '').replace(/\D/g, '');
+  const todayStr = new Date().toISOString().split('T')[0];
+  let followUpTagHtml = '';
+  if (lead.nextActionDate && lead.dealStage !== 'Ganado' && lead.dealStage !== 'Perdido') {
+    if (lead.nextActionDate === todayStr) {
+      followUpTagHtml = `<span class="tag tag-followup">📅 Hoy</span>`;
+    } else if (lead.nextActionDate < todayStr) {
+      followUpTagHtml = `<span class="tag tag-overdue">⚠️ Vencido</span>`;
+    }
+  }
+
   const prefilledText = encodeURIComponent(`¡Hola ${lead.contactName || ''}! Te escribo de Flux.ai respecto a tu proyecto de automatización/IA para ${lead.companyName || ''}.`);
-  const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${prefilledText}` : null;
+  const waUrl = lead.contactPhone ? `https://wa.me/${lead.contactPhone}?text=${prefilledText}` : null;
 
   card.innerHTML = `
     <div class="card-company">
@@ -279,12 +392,13 @@ function createKanbanCardEl(lead) {
     <div class="card-tags">
       <span class="tag tag-founder">👤 ${escapeHtml(lead.assignedFounder || 'Pau')}</span>
       <span class="tag tag-service">⚡ ${escapeHtml(lead.serviceType || 'IA')}</span>
+      ${followUpTagHtml}
     </div>
     <div class="card-footer">
       <span class="card-value">${formatCurrency(lead.dealValue)}</span>
       <div class="card-actions">
         <select class="quick-stage-select" title="Mover etapa rápidamente">
-          ${STAGES.map(s => `<option value="${s}" ${s === lead.dealStage ? 'selected' : ''}>${s}</option>`).join('')}
+          ${DEAL_STAGES.map(s => `<option value="${s}" ${s === lead.dealStage ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
         ${waUrl ? `
           <a href="${waUrl}" target="_blank" rel="noopener" class="card-action-btn" title="Enviar WhatsApp con mensaje preparado">
@@ -301,9 +415,8 @@ function createKanbanCardEl(lead) {
     stageSelect.addEventListener('change', async (e) => {
       e.stopPropagation();
       const newStage = e.target.value;
-      await updateLead(lead.id, { dealStage: newStage });
+      await DB.updateLead(lead.id, { dealStage: newStage });
       showToast(`Etapa actualizada a "${newStage}"`);
-      await loadAndRenderLeads();
     });
   }
 
@@ -316,9 +429,8 @@ function renderTable(leads) {
 
   leads.forEach(lead => {
     const tr = document.createElement('tr');
-    const cleanPhone = (lead.contactPhone || '').replace(/\D/g, '');
     const prefilledText = encodeURIComponent(`¡Hola ${lead.contactName || ''}! Te escribo de Flux.ai respecto a tu proyecto de automatización/IA para ${lead.companyName || ''}.`);
-    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${prefilledText}` : null;
+    const waUrl = lead.contactPhone ? `https://wa.me/${lead.contactPhone}?text=${prefilledText}` : null;
 
     tr.innerHTML = `
       <td><strong>${escapeHtml(lead.companyName)}</strong></td>
@@ -327,6 +439,7 @@ function renderTable(leads) {
       <td><span class="tag tag-service">${escapeHtml(lead.serviceType || 'IA')}</span></td>
       <td><span class="tag">${escapeHtml(lead.dealStage)}</span></td>
       <td><strong>${formatCurrency(lead.dealValue)}</strong></td>
+      <td>${lead.nextActionDate ? escapeHtml(lead.nextActionDate) : '-'}</td>
       <td>
         <button class="btn btn-sm btn-secondary btn-edit-lead">Editar</button>
         ${waUrl ? `<a href="${waUrl}" target="_blank" class="btn btn-sm btn-outline-purple">WhatsApp</a>` : ''}
@@ -338,7 +451,7 @@ function renderTable(leads) {
   });
 }
 
-STAGES.forEach(stage => {
+DEAL_STAGES.forEach(stage => {
   const col = document.querySelector(`.kanban-column[data-stage="${stage}"]`);
   if (col) {
     col.addEventListener('dragover', (e) => {
@@ -353,9 +466,8 @@ STAGES.forEach(stage => {
       col.classList.remove('drag-over');
       const leadId = e.dataTransfer.getData('text/plain');
       if (leadId) {
-        await updateLead(leadId, { dealStage: stage });
+        await DB.updateLead(leadId, { dealStage: stage });
         showToast(`Lead movido a "${stage}"`);
-        await loadAndRenderLeads();
       }
     });
   }
@@ -366,8 +478,10 @@ function openLeadModal(lead = null) {
   const title = document.getElementById('modalTitle');
   const deleteBtn = document.getElementById('btnDeleteLead');
   const aiSuggestion = document.getElementById('aiSuggestion');
+  const btnCopyAi = document.getElementById('btnCopyAiIdea');
   
   aiSuggestion.classList.add('hidden');
+  if (btnCopyAi) btnCopyAi.classList.add('hidden');
 
   if (lead) {
     title.textContent = `Editar Lead: ${lead.companyName}`;
@@ -391,6 +505,7 @@ function openLeadModal(lead = null) {
   }
 
   modal.classList.remove('hidden');
+  document.getElementById('companyName').focus();
 }
 
 function closeLeadModal() {
@@ -414,24 +529,22 @@ async function handleLeadFormSubmit(e) {
   };
 
   if (id) {
-    await updateLead(id, leadData);
+    await DB.updateLead(id, leadData);
     showToast('Lead actualizado con éxito');
   } else {
-    await addLead(leadData);
+    await DB.addLead(leadData);
     showToast('¡Nuevo lead registrado!');
   }
 
   closeLeadModal();
-  await loadAndRenderLeads();
 }
 
 async function handleLeadDelete() {
   const id = document.getElementById('leadId').value;
   if (id && confirm('¿Estás seguro de eliminar este prospecto?')) {
-    await deleteLead(id);
+    await DB.deleteLead(id);
     showToast('Lead eliminado');
     closeLeadModal();
-    await loadAndRenderLeads();
   }
 }
 
@@ -440,6 +553,7 @@ function generateAiIdea() {
   const service = document.getElementById('serviceType').value;
   const notes = document.getElementById('leadNotes').value || '';
   const aiBox = document.getElementById('aiSuggestion');
+  const btnCopy = document.getElementById('btnCopyAiIdea');
 
   let ideaText = '';
 
@@ -459,6 +573,7 @@ function generateAiIdea() {
 
   aiBox.innerHTML = ideaText.replace(/\n/g, '<br>');
   aiBox.classList.remove('hidden');
+  if (btnCopy) btnCopy.classList.remove('hidden');
 }
 
 function formatCurrency(amount) {
