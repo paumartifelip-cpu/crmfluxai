@@ -475,6 +475,15 @@ body {
   cursor: pointer;
 }
 
+/* MOBILE STAGE TABS — HIDDEN ON DESKTOP */
+.mobile-stage-tabs {
+  display: none !important;
+}
+
+.fab-add-mobile {
+  display: none;
+}
+
 /* Kanban Board Layout */
 .kanban-board {
   display: grid;
@@ -537,7 +546,7 @@ body {
   flex: 1;
 }
 
-/* VISUAL LEAD IDENTIFICATION & CARD ENHANCEMENTS */
+/* Lead Cards */
 .lead-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
@@ -883,6 +892,7 @@ body {
   color: #15803d;
 }
 
+/* MOBILE SPECIFIC RULES */
 @media (max-width: 768px) {
   .app-header {
     padding: 0.65rem 1rem;
@@ -892,6 +902,20 @@ body {
   }
   .fab-add-mobile {
     display: flex;
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-black);
+    color: white;
+    font-size: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    z-index: 90;
   }
   .ai-input-wrapper {
     flex-direction: column;
@@ -909,7 +933,25 @@ body {
     display: none;
   }
   .mobile-stage-tabs {
-    display: flex;
+    display: flex !important;
+    overflow-x: auto;
+    gap: 0.4rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .stage-tab-btn {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    padding: 0.35rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .stage-tab-btn.active {
+    background: var(--accent-black);
+    color: #ffffff;
   }
   .kanban-board.mobile-single-view {
     grid-template-columns: 1fr;
