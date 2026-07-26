@@ -5,6 +5,7 @@
  * Architecture: Local-First / Optimistic UI / Event-Driven Sync Engine
  * Design: High Reliability, Zero Data Loss, Auto-Recovery & Conflict Resolution
  * Founders: Pau Martí & Miquel Canals (Flux.ai)
+ * Endpoint: Deployed Live Google Sheets Apps Script Web App
  * ============================================================================
  */
 
@@ -15,7 +16,8 @@ const STORAGE_KEYS = {
   SETTINGS: 'flux_crm_db_settings_v2'
 };
 
-const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx3ebsEN7oCAGzGWhFcDlSAlvnxgEK9mVHXW-l89kh6F5o_i7ioSeGu9ux6CoNKqq0M/exec';
+// LIVE GOOGLE SHEETS ENDPOINT DEPLOYED BY PAU & MIQUEL
+const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxUlPNBvBFr6rvrTpDhAEzuyOU6HWXvDav1f4DqTvik8lSZdP7pASYcSUODR-ryYjue/exec';
 
 // Enums & Constants
 export const DEAL_STAGES = [
@@ -78,12 +80,9 @@ class DatabaseEngine {
   }
 
   init() {
-    const savedEndpoint = localStorage.getItem(STORAGE_KEYS.ENDPOINT);
-    if (savedEndpoint && savedEndpoint.startsWith('https://script.google.com/')) {
-      this.endpointUrl = savedEndpoint;
-    } else {
-      this.endpointUrl = DEFAULT_ENDPOINT;
-    }
+    // ALWAYS ENFORCE PAU & MIQUEL'S LIVE ENDPOINT
+    localStorage.setItem(STORAGE_KEYS.ENDPOINT, DEFAULT_ENDPOINT);
+    this.endpointUrl = DEFAULT_ENDPOINT;
 
     this.leads = this.loadFromStorage(STORAGE_KEYS.LEADS, INITIAL_DEMO_LEADS);
     this.syncQueue = this.loadFromStorage(STORAGE_KEYS.QUEUE, []);
@@ -94,7 +93,7 @@ class DatabaseEngine {
       if (navigator.onLine && this.syncQueue.length > 0) {
         this.processSyncQueue();
       }
-    }, 10000);
+    }, 8000);
 
     if (navigator.onLine && this.endpointUrl) {
       this.pullFromRemote();
@@ -255,7 +254,6 @@ class DatabaseEngine {
           bodyPayload = { action: actionName, leadId: op.payload.id };
         }
 
-        // CRITICAL FOR GOOGLE APPS SCRIPT: Use text/plain with mode: 'no-cors' to avoid preflight CORS blocks
         await fetch(this.endpointUrl, {
           method: 'POST',
           mode: 'no-cors',
