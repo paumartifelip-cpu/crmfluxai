@@ -6,6 +6,7 @@
  * Design: High Reliability, Zero Data Loss, Auto-Recovery & Conflict Resolution
  * Founders: Pau Martí & Miquel Canals (Flux.ai)
  * Endpoint: Deployed Live Google Sheets Apps Script Web App
+ * Real-Time 2-Way Sync: Automated Background Polling Loop for Multi-User Live Collaboration
  * ============================================================================
  */
 
@@ -80,18 +81,28 @@ class DatabaseEngine {
   }
 
   init() {
-    // ALWAYS ENFORCE PAU & MIQUEL'S LIVE ENDPOINT
     localStorage.setItem(STORAGE_KEYS.ENDPOINT, DEFAULT_ENDPOINT);
     this.endpointUrl = DEFAULT_ENDPOINT;
 
     this.leads = this.loadFromStorage(STORAGE_KEYS.LEADS, INITIAL_DEMO_LEADS);
     this.syncQueue = this.loadFromStorage(STORAGE_KEYS.QUEUE, []);
 
-    window.addEventListener('online', () => this.processSyncQueue());
+    window.addEventListener('online', () => {
+      this.processSyncQueue();
+      this.pullFromRemote();
+    });
 
+    // 1. Process Outgoing Queue Every 6 Seconds
     setInterval(() => {
       if (navigator.onLine && this.syncQueue.length > 0) {
         this.processSyncQueue();
+      }
+    }, 6000);
+
+    // 2. LIVE 2-WAY MULTI-USER POLLING: Pull Fresh Changes from Google Sheets Every 8 Seconds
+    setInterval(() => {
+      if (navigator.onLine && this.syncQueue.length === 0 && !this.isSyncing) {
+        this.pullFromRemote();
       }
     }, 8000);
 
@@ -284,15 +295,14 @@ class DatabaseEngine {
     if (!this.endpointUrl || !navigator.onLine) return;
 
     try {
-      this.notifySyncStatus({ state: 'syncing', pendingCount: 0, message: 'Sincronizando con Google Sheets...' });
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 7000);
+      const timer = setTimeout(() => controller.abort(), 6000);
       
       const res = await fetch(this.endpointUrl + '?action=getLeads', { signal: controller.signal });
       clearTimeout(timer);
 
       const remoteData = await res.json();
-      if (Array.isArray(remoteData) && remoteData.length > 0) {
+      if (Array.isArray(remoteData)) {
         const pendingIds = new Set(this.syncQueue.map(q => q.payload?.id));
         const merged = remoteData.map(r => this.sanitizeLeadSchema(r));
 
@@ -308,8 +318,7 @@ class DatabaseEngine {
       }
       this.notifySyncStatus({ state: 'synced', pendingCount: 0, message: 'Google Sheets Sincronizado 📊' });
     } catch (e) {
-      console.warn('Pull remote error or timeout:', e);
-      this.notifySyncStatus({ state: 'synced', pendingCount: 0, message: 'Google Sheets Activo (Local Queue)' });
+      // Quiet background error handling
     }
   }
 
