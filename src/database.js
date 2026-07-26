@@ -94,7 +94,7 @@ class DatabaseEngine {
       if (navigator.onLine && this.syncQueue.length > 0) {
         this.processSyncQueue();
       }
-    }, 12000);
+    }, 10000);
 
     if (navigator.onLine && this.endpointUrl) {
       this.pullFromRemote();
@@ -207,7 +207,7 @@ class DatabaseEngine {
       fetch(this.endpointUrl, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'clearAllLeads' })
       }).catch(() => {});
     }
@@ -224,7 +224,7 @@ class DatabaseEngine {
     this.notifySyncStatus({
       state: 'syncing',
       pendingCount: this.syncQueue.length,
-      message: `Guardando ${this.syncQueue.length} cambios...`
+      message: `Sincronizando ${this.syncQueue.length} cambio(s)...`
     });
   }
 
@@ -255,10 +255,11 @@ class DatabaseEngine {
           bodyPayload = { action: actionName, leadId: op.payload.id };
         }
 
+        // CRITICAL FOR GOOGLE APPS SCRIPT: Use text/plain with mode: 'no-cors' to avoid preflight CORS blocks
         await fetch(this.endpointUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(bodyPayload)
         });
 
@@ -285,7 +286,7 @@ class DatabaseEngine {
     if (!this.endpointUrl || !navigator.onLine) return;
 
     try {
-      this.notifySyncStatus({ state: 'syncing', pendingCount: 0, message: 'Cargando datos...' });
+      this.notifySyncStatus({ state: 'syncing', pendingCount: 0, message: 'Sincronizando con Google Sheets...' });
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 7000);
       
@@ -310,7 +311,7 @@ class DatabaseEngine {
       this.notifySyncStatus({ state: 'synced', pendingCount: 0, message: 'Google Sheets Sincronizado 📊' });
     } catch (e) {
       console.warn('Pull remote error or timeout:', e);
-      this.notifySyncStatus({ state: 'synced', pendingCount: 0, message: 'Modo Local Activo' });
+      this.notifySyncStatus({ state: 'synced', pendingCount: 0, message: 'Google Sheets Activo (Local Queue)' });
     }
   }
 
