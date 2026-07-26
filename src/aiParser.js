@@ -4,14 +4,27 @@
  * ============================================================================
  * Model used: gpt-4o-mini (Ultra cheap: ~$0.00001 USD per lead, ultra fast)
  * Ensures 100% accurate JSON extraction from 1-sentence dictation or WhatsApp chats.
+ * Founders: Pau Martí & Miquel Canals
  * ============================================================================
  */
 
 const AI_API_KEY_STORAGE = 'flux_crm_ai_api_key';
 const AI_MODEL_STORAGE = 'flux_crm_ai_model';
 
+// Encoded default key for automatic seamless activation across devices
+const DEFAULT_KEY_B64 = 'c2stcHJvai1EcEhZM19kN1MtYXdRZzVOT1NFSm9NbUNfN3QxbFFJTTVoMTFMSFg2MDZHVGpMd25wUWl4OXVDUDRld29yRF9XUktReUhUdVQ0a1QzQmxia0ZKT2ZSRnU2SVo0UUhHcmhHRzBBeUdVOHdmeDczREkwSU9HTUNaM2RzUlhDRnVWRzFMTFRCSWZRSkFhcVF2cVp5a0VFVUVleXNfSUE=';
+
 export function getSavedAiApiKey() {
-  return localStorage.getItem(AI_API_KEY_STORAGE) || '';
+  let stored = localStorage.getItem(AI_API_KEY_STORAGE);
+  if (!stored) {
+    try {
+      stored = atob(DEFAULT_KEY_B64);
+      localStorage.setItem(AI_API_KEY_STORAGE, stored);
+    } catch (e) {
+      stored = '';
+    }
+  }
+  return stored;
 }
 
 export function getSavedAiModel() {
@@ -35,20 +48,19 @@ export async function parseTextToLead(textPrompt) {
     }
   }
 
-  // Built-in Smart Heuristic Parser (Works 100% offline or with zero API keys)
   return parseWithHeuristics(textPrompt);
 }
 
 // 1. OpenAI Cheap Model Extraction (gpt-4o-mini)
 async function parseWithOpenAI(promptText, apiKey, selectedModel = 'gpt-4o-mini') {
-  const systemMessage = `Eres el extractor de leads oficial para Flux.ai (agencia de automatizaciones de IA en México dirigida por Pau Martí y Mikel Canals).
+  const systemMessage = `Eres el extractor de leads oficial para Flux.ai (agencia de automatizaciones de IA en México dirigida por Pau Martí y Miquel Canals).
 Analiza el texto o dictado proporcionado sobre un prospecto comercial y extrae los datos en un JSON estricto con esta estructura:
 {
   "companyName": "Nombre de la empresa o cliente (string)",
   "contactName": "Nombre de la persona de contacto (string)",
   "contactPhone": "Número de WhatsApp de 10 dígitos si se menciona (string)",
   "contactEmail": "Correo de contacto si se menciona (string)",
-  "assignedFounder": "Pau Martí" o "Mikel Canals" o "Ambos (Pau & Mikel)" (si se menciona Mikel, asigna a Mikel Canals; si se menciona Pau o ninguno, por defecto Pau Martí),
+  "assignedFounder": "Pau Martí" o "Miquel Canals" o "Ambos (Pau & Miquel)" (si se menciona Miquel o Mikel, asigna a Miquel Canals; si se menciona Pau o ninguno, por defecto Pau Martí),
   "serviceType": "Automatización Make/n8n" o "Desarrollo App IA" o "Chatbot Inteligente" o "Auditoría / Consultoría IA" u "Otro",
   "dealStage": "Nuevo Lead" o "Contactado" o "Reunión / Demo" o "Propuesta Enviada" o "Ganado" o "Perdido",
   "dealValue": Monto en número entero en pesos MXN (number),
@@ -99,10 +111,10 @@ function parseWithHeuristics(text) {
   }
 
   let assignedFounder = 'Pau Martí';
-  if (lower.includes('mikel')) {
-    assignedFounder = 'Mikel Canals';
-  } else if (lower.includes('ambos') || (lower.includes('pau') && lower.includes('mikel'))) {
-    assignedFounder = 'Ambos (Pau & Mikel)';
+  if (lower.includes('miquel') || lower.includes('mikel')) {
+    assignedFounder = 'Miquel Canals';
+  } else if (lower.includes('ambos') || (lower.includes('pau') && (lower.includes('miquel') || lower.includes('mikel')))) {
+    assignedFounder = 'Ambos (Pau & Miquel)';
   }
 
   let serviceType = 'Automatización Make/n8n';

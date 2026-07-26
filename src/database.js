@@ -4,7 +4,7 @@
  * ============================================================================
  * Architecture: Local-First / Optimistic UI / Event-Driven Sync Engine
  * Design: High Reliability, Zero Data Loss, Auto-Recovery & Conflict Resolution
- * Developers: Pau Martí & Mikel Canals (Flux.ai)
+ * Founders: Pau Martí & Miquel Canals (Flux.ai)
  * ============================================================================
  */
 
@@ -27,7 +27,7 @@ export const DEAL_STAGES = [
   'Perdido'
 ];
 
-export const FOUNDERS = ['Pau Martí', 'Mikel Canals', 'Ambos (Pau & Mikel)'];
+export const FOUNDERS = ['Pau Martí', 'Miquel Canals', 'Ambos (Pau & Miquel)'];
 
 // Default Seed Leads if database is empty
 const INITIAL_DEMO_LEADS = [
@@ -53,7 +53,7 @@ const INITIAL_DEMO_LEADS = [
     contactName: 'Sofía Garza',
     contactPhone: '8181239876',
     contactEmail: 'sofia@logisticamty.mx',
-    assignedFounder: 'Mikel Canals',
+    assignedFounder: 'Miquel Canals',
     serviceType: 'Automatización Make/n8n',
     dealStage: 'Propuesta Enviada',
     dealValue: 45000,
@@ -139,7 +139,7 @@ class DatabaseEngine {
   }
 
   setEndpointUrl(url) {
-    const clean = url.trim() || DEFAULT_SHEETS_URL;
+    const clean = url.trim() || DEFAULT_ENDPOINT;
     this.endpointUrl = clean;
     localStorage.setItem(STORAGE_KEYS.ENDPOINT, clean);
     this.pullFromRemote();
@@ -273,13 +273,11 @@ class DatabaseEngine {
           body: JSON.stringify(bodyPayload)
         });
 
-        // Mark local lead syncState as synced
         if (op.payload && op.payload.id) {
           const lead = this.leads.find(l => l.id === op.payload.id);
           if (lead) lead.syncState = 'synced';
         }
 
-        // Shift queue item out
         this.syncQueue.shift();
         this.saveToStorage(STORAGE_KEYS.QUEUE, this.syncQueue);
         this.saveToStorage(STORAGE_KEYS.LEADS, this.leads);
@@ -307,11 +305,9 @@ class DatabaseEngine {
 
       const remoteData = await res.json();
       if (Array.isArray(remoteData) && remoteData.length > 0) {
-        // Merge strategy: Remote wins if not in local uncommitted queue
         const pendingIds = new Set(this.syncQueue.map(q => q.payload?.id));
         const merged = remoteData.map(r => this.sanitizeLeadSchema(r));
 
-        // Retain local leads that are pending insertion
         this.leads.forEach(localLead => {
           if (pendingIds.has(localLead.id) && !merged.some(m => m.id === localLead.id)) {
             merged.unshift(localLead);
@@ -331,13 +327,19 @@ class DatabaseEngine {
 
   // --- SCHEMA SANITIZATION & INTEGRITY ---
   sanitizeLeadSchema(data) {
+    let founder = String(data.assignedFounder || '').trim();
+    if (founder === 'Mikel Canals' || founder === 'Mikel') founder = 'Miquel Canals';
+    if (founder === 'Pau Martí' || founder === 'Pau') founder = 'Pau Martí';
+    if (founder.includes('Ambos')) founder = 'Ambos (Pau & Miquel)';
+    if (!FOUNDERS.includes(founder)) founder = 'Pau Martí';
+
     return {
       id: String(data.id || 'lead-' + Date.now()),
       companyName: String(data.companyName || 'Empresa Sin Nombre').trim(),
       contactName: String(data.contactName || '').trim(),
       contactPhone: this.formatPhone(data.contactPhone || ''),
       contactEmail: String(data.contactEmail || '').trim().toLowerCase(),
-      assignedFounder: FOUNDERS.includes(data.assignedFounder) ? data.assignedFounder : 'Pau Martí',
+      assignedFounder: founder,
       serviceType: String(data.serviceType || 'Automatización Make/n8n'),
       dealStage: DEAL_STAGES.includes(data.dealStage) ? data.dealStage : 'Nuevo Lead',
       dealValue: Math.max(0, Number(data.dealValue || 0)),
@@ -412,15 +414,14 @@ class DatabaseEngine {
     link.remove();
   }
 
-  // --- STORAGE UTILS ---
+  saveToStorage(key, data) {
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error('Storage error:', e); }
+  }
+
   loadFromStorage(key, fallback) {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
     try { return JSON.parse(raw); } catch (e) { return fallback; }
-  }
-
-  saveToStorage(key, data) {
-    try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) { console.error('Storage quota error:', e); }
   }
 }
 

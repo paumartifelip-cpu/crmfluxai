@@ -329,8 +329,8 @@ function updateFounderBadges(allLeads) {
   let countMikel = 0;
 
   allLeads.forEach(l => {
-    if (l.assignedFounder === 'Pau Martí' || l.assignedFounder === 'Ambos (Pau & Mikel)') countPau++;
-    if (l.assignedFounder === 'Mikel Canals' || l.assignedFounder === 'Ambos (Pau & Mikel)') countMikel++;
+    if (l.assignedFounder === 'Pau Martí' || l.assignedFounder.includes('Ambos')) countPau++;
+    if (l.assignedFounder === 'Miquel Canals' || l.assignedFounder.includes('Ambos')) countMikel++;
   });
 
   const cAll = document.getElementById('countAllFounder');
@@ -362,7 +362,7 @@ function filterLeads(leads) {
   return leads.filter(lead => {
     // Founder filter
     if (activeFounderFilter !== 'ALL') {
-      if (lead.assignedFounder !== activeFounderFilter && lead.assignedFounder !== 'Ambos (Pau & Mikel)') {
+      if (lead.assignedFounder !== activeFounderFilter && !lead.assignedFounder.includes('Ambos')) {
         return false;
       }
     }
@@ -510,7 +510,6 @@ function createKanbanCardEl(lead) {
     </div>
   `;
 
-  // Quick stage selector change handler
   const stageSelect = card.querySelector('.quick-stage-select');
   if (stageSelect) {
     stageSelect.addEventListener('change', async (e) => {
