@@ -138,15 +138,6 @@ function setupEventListeners() {
     });
   }
 
-  const presetChips = document.querySelectorAll('.preset-chip');
-  presetChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      const val = chip.getAttribute('data-val');
-      const valInput = document.getElementById('dealValue');
-      if (valInput) valInput.value = val;
-    });
-  });
-
   const btnClearSearch = document.getElementById('btnClearSearch');
   const searchInput = document.getElementById('searchInput');
   if (searchInput && btnClearSearch) {
@@ -192,7 +183,6 @@ function setupEventListeners() {
     });
   }
 
-  // Mobile stage tabs fix: use closest('.stage-tab-btn')
   const stageTabs = document.querySelectorAll('#mobileStageTabs .stage-tab-btn');
   stageTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -219,7 +209,6 @@ function setupEventListeners() {
   document.getElementById('viewKanbanBtn').addEventListener('click', () => setView('kanban'));
   document.getElementById('viewTableBtn').addEventListener('click', () => setView('table'));
 
-  // FOUNDER FILTER FIX: Use closest('.segment-btn') to catch clicks on inner counts
   const founderBtns = document.querySelectorAll('#founderFilter .segment-btn');
   founderBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -316,7 +305,6 @@ function filterLeads(leads) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   return leads.filter(lead => {
-    // Robust Founder Filtering logic
     if (activeFounderFilter && activeFounderFilter !== 'ALL') {
       const assigned = lead.assignedFounder || '';
       if (activeFounderFilter === 'Pau Martí') {
@@ -325,17 +313,14 @@ function filterLeads(leads) {
         if (assigned !== 'Miquel Canals' && !assigned.includes('Mikel') && !assigned.includes('Ambos')) return false;
       }
     }
-    // Service filter
     if (activeServiceFilter && activeServiceFilter !== 'ALL') {
       if (lead.serviceType !== activeServiceFilter) return false;
     }
-    // Follow-up filter
     if (showOnlyFollowUps) {
       if (!lead.nextActionDate || lead.nextActionDate > todayStr || lead.dealStage === 'Ganado' || lead.dealStage === 'Perdido') {
         return false;
       }
     }
-    // Search query filter
     if (currentSearchQuery) {
       const matchCompany = (lead.companyName || '').toLowerCase().includes(currentSearchQuery);
       const matchContact = (lead.contactName || '').toLowerCase().includes(currentSearchQuery);
@@ -432,19 +417,15 @@ function createKanbanCardEl(lead) {
     openLeadModal(lead);
   });
 
+  // CLEAN FOLLOW-UP TAG LOGIC: Only show date if explicitly defined
   const todayStr = new Date().toISOString().split('T')[0];
   let followUpTagHtml = '';
   if (lead.nextActionDate && lead.dealStage !== 'Ganado' && lead.dealStage !== 'Perdido') {
     if (lead.nextActionDate === todayStr) {
       followUpTagHtml = `<span class="tag tag-followup">📅 Hoy</span>`;
-    } else if (lead.nextActionDate < todayStr) {
-      followUpTagHtml = `<span class="tag tag-overdue">⚠️ Vencido</span>`;
+    } else {
+      followUpTagHtml = `<span class="tag">📅 ${escapeHtml(lead.nextActionDate)}</span>`;
     }
-  }
-
-  let highValueBadge = '';
-  if (lead.dealValue >= 50000) {
-    highValueBadge = `<span class="tag tag-high-value">🔥 $50k+</span>`;
   }
 
   const monogram = getCompanyInitials(lead.companyName);
@@ -456,7 +437,6 @@ function createKanbanCardEl(lead) {
   card.innerHTML = `
     <div class="card-top-bar">
       <span class="lead-id-badge">${escapeHtml(lead.id)}</span>
-      ${highValueBadge}
     </div>
     
     <div class="company-avatar-row">
@@ -464,7 +444,7 @@ function createKanbanCardEl(lead) {
       <div class="card-company">${escapeHtml(lead.companyName)}</div>
     </div>
 
-    <div class="card-contact">👤 ${escapeHtml(lead.contactName || 'Sin contacto')}</div>
+    ${lead.contactName ? `<div class="card-contact">👤 ${escapeHtml(lead.contactName)}</div>` : ''}
     
     <div class="card-tags">
       <span class="tag tag-founder">👤 ${escapeHtml(lead.assignedFounder || 'Pau')}</span>
